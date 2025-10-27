@@ -1,7 +1,7 @@
 ---
 name: Feature request
 about: 'feature issue '
-title: "[Feat]: "
+title: 'Feat: '
 labels: ''
 assignees: ''
 
