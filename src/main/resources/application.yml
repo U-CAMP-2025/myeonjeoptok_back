@@ -8,6 +8,11 @@ spring:
         format_sql: true
     open-in-view: false
 
+  security:
+    user:
+      name: user
+      password: password
+
 logging:
   level:
     org.hibernate.SQL: debug
