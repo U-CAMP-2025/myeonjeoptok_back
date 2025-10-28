@@ -32,7 +32,7 @@ public class Simulation {
     private Post post;
 
     @Column(name = "simulation_random",length = 1)
-    @ColumnDefault("N")
+    @ColumnDefault("'N'")
     private String simulationRandom;
 
     @Column(name = "simulation_qa_count")
