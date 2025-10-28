@@ -1,10 +1,6 @@
 package com.ucamp.project.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -32,8 +28,9 @@ public class User {
     /**
      * TODO: Job Entity 생기면 @ManyToOne로 바꿈
      */
-    @Column(name = "job_id")
-    private Long jobId;
+    @ManyToOne
+    @JoinColumn(name="job_id")
+    private Job job;
 
     @Column(name = "status", length = 20)
     private String status; // e.g., ACTIVE, DISABLED, REGISTERING
