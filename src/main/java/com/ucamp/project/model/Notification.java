@@ -26,7 +26,7 @@ public class Notification {
     private String notiType;
 
     @Column(name = "noti_read",length = 1)
-    @ColumnDefault("Y")
+    @ColumnDefault("'Y'")
     private String notiRead;
 
     @ManyToOne

@@ -42,7 +42,7 @@ public class Post {
     private LocalDateTime postUpdatedAt;
 
     @Column(name = "post_status",length = 1)
-    @ColumnDefault("Y")
+    @ColumnDefault("'Y'")
     private String postStatus;
 
     @ManyToOne

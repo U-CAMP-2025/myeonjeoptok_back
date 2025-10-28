@@ -38,6 +38,9 @@ public class User {
     @Column(name = "pass_status", columnDefinition = "char(1)", length = 1)
     private String passStatus; // "Y" or "N"
 
+    @Column(name="users_profile_image_url", length = 255)
+    private String usersProfileImageUrl;
+
     @Column(name = "created_at", nullable = false)
     private java.time.LocalDateTime createdAt;
 
