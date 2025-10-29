@@ -27,7 +27,7 @@ public class Certificate {
     private Long certId;
 
     @ManyToOne
-    @JoinColumn(name = "nickname")
+    @JoinColumn(name = "user_id")
     private User user;
 
     @Column(name = "cert_status")

@@ -20,7 +20,7 @@ public class Simulation {
     private Long simulationId;
 
     @ManyToOne
-    @JoinColumn(name = "nickname", nullable = false)
+    @JoinColumn(name = "user_id")
     private User user;
 
     @ManyToOne
