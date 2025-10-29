@@ -30,7 +30,7 @@ public class Notification {
     private String notiRead;
 
     @ManyToOne
-    @JoinColumn(name = "nickname")
+    @JoinColumn(name = "user_id")
     private User user;
 
     @Column(name = "noti_created_at")

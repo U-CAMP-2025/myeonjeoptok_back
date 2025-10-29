@@ -16,7 +16,10 @@ import lombok.Setter;
 @Builder
 public class User {
     @Id
-    @Column(name = "kakao_id", length = 100, nullable = false)
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
+    @Column(name = "kakao_id", length = 100, nullable = false, unique = true)
     private String kakaoId;
 
     @Column(name = "nickname", length = 10, nullable = false, unique = true)
