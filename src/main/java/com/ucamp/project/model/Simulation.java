@@ -14,8 +14,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class Simulation {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     @Column(name = "simulation_id")
     private Long simulationId;
 
