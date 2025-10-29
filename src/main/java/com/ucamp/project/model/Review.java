@@ -14,7 +14,13 @@ import java.time.LocalDateTime;
 @Builder
 public class Review {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE,
+            generator = "review_seq_gen")
+    @SequenceGenerator(
+            name = "review_seq_gen",
+            sequenceName = "REVIEW_SEQ",
+            allocationSize = 1
+    )
     @Column(name = "review_id")
     private Long reviewId;
 

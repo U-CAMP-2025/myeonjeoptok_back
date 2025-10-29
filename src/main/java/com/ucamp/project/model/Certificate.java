@@ -22,7 +22,13 @@ public class Certificate {
 //    cert_file_url VARCHAR2(255) NOT NULL,
 //    cert_trmt_date DATE, -- 요청 처리 날짜
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE,
+            generator = "certificate_seq_gen")     // @SeqGen의 별명과 연결
+    @SequenceGenerator(
+            name = "certificate_seq_gen",      // generator과 연결할 별명 생성
+            sequenceName = "CERTIFICATE_SEQ", // DB에 생성한 시퀀스 이름과 연결
+            allocationSize = 1          // 건너뜀 방지, 1개씩만 가져옴
+    )
     @Column(name="cert_id")
     private Long certId;
 

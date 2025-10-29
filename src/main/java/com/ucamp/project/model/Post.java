@@ -17,7 +17,13 @@ import java.time.LocalDateTime;
 @Builder
 public class Post {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE,
+            generator = "post_seq_gen")     // @SeqGen의 별명과 연결
+    @SequenceGenerator(
+            name = "post_seq_gen",      // generator과 연결할 별명 생성
+            sequenceName = "POST_SEQ",  // DB에 생성한 시퀀스 이름과 연결
+            allocationSize = 1          // 건너뜀 방지, 1개씩만 가져옴
+    )
     @Column(name = "post_id")
     private Long postId;
 
