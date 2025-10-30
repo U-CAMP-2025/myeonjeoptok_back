@@ -54,7 +54,7 @@ public class AuthController {
                     .path("/auth").maxAge(Duration.ofMinutes(5)).build();
             res.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
             // 프론트 가입 페이지로 리다이렉트
-            URI to = URI.create("https://app.example.com/signup");
+            URI to = URI.create("http://localhost:3000/signup");
             return ResponseEntity.status(HttpStatus.FOUND).location(to).build();
         }
     }
