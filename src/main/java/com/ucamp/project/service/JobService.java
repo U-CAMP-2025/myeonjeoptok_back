@@ -18,13 +18,6 @@ public class JobService {
     private final JobRepository jobRepository;
     public List<JobResponse> findAll(){
         List<Job> jobs = jobRepository.findAll();
-//        List<JobResponse> jobResponses = new ArrayList<>();
-//        for(Job job : jobs){
-//            JobResponse jobResponse = JobResponse.builder()
-//            .jobId(job.getJobId()).jobName(job.getJobName()).build();
-//            jobResponses.add(jobResponse);
-//        }
-//        return jobResponses;
 
         return jobs.stream()
                 .map(job -> JobResponse.builder()
