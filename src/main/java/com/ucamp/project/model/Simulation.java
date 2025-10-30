@@ -57,5 +57,34 @@ public class Simulation {
 //* SIMULATION_COMPLETED_AT DATE
 //    SIMULATION_STATUS VARCHAR2 (20 BYTE)
 
+    @Transient
+    private Long userId;
+    @Transient
+    private Long interviewerId;
+    @Transient
+    private Long postId;
+
+    @PrePersist
+    private void onCreate() {
+        if (this.user == null && this.userId != null) {
+            this.user = User.builder().userId(userId).build();
+        }
+        if (this.interviewer == null && this.interviewerId != null) {
+            this.interviewer = Interviewer.builder().interviewerId(this.interviewerId).build();
+        }
+        if (this.post == null && this.postId != null) {
+            this.post = Post.builder().postId(this.postId).build();
+        }
+        if (this.simulationQACount == null) {
+            this.simulationQACount = 0l;
+        }
+        if (this.simulationCreatedAt == null) {
+            this.simulationCreatedAt = LocalDateTime.now();
+        }
+        if (this.simulationStatus == null) {
+            this.simulationStatus = "INPROGRESS";
+        }
+    }
+
 
 }

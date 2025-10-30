@@ -58,6 +58,9 @@ public class User {
     @Column(name = "role", length = 10)
     private String role; // USER, ADMIN, etc.
 
+    @Transient
+    private Long jobId;
+
     @PrePersist
     private void onCreate() {
         if (this.createdAt == null) {
@@ -71,6 +74,9 @@ public class User {
         }
         if (this.passStatus != null && !this.passStatus.isBlank()) {
             this.passStatus = this.passStatus.trim().toUpperCase().substring(0, 1);
+        }
+        if (this.jobId != null && this.job == null) {
+            this.job = Job.builder().jobId(this.jobId).build();
         }
     }
 }

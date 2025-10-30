@@ -31,14 +31,11 @@ public class SimulationController {
 
     @PostMapping
     public ApiResponse<Object> createPost(@RequestBody Simulation simulation){
-        System.out.println("TEST : " + simulation.getPost().getPostId());
+        System.out.println("TEST : " + simulation.getPostId());
         System.out.println("TEST : " + simulation.getSimulationRandom());
-        System.out.println("TEST : " + simulation.getInterviewer().getInterviewerId());
+        System.out.println("TEST : " + simulation.getInterviewerId());
         simulation.setUser(new User());
         simulation.getUser().setUserId(101l);
-        simulation.setSimulationQACount(0l);
-        simulation.setSimulationCreatedAt(LocalDateTime.now());
-        simulation.setSimulationStatus("INPROGRESS");
 
 
         ApiResponse<Object> resp = ApiResponse.builder()
