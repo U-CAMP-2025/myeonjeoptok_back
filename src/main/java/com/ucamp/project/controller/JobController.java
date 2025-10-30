@@ -18,6 +18,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class JobController {
     private final JobService jobService;
+    // 직무 목록 조회 (회원가입 폼에서 필요)
     @GetMapping("/jobs")
     public ResponseEntity<List<JobResponse>> findAllJobs(){
         List<JobResponse> jobList = jobService.findAll();
