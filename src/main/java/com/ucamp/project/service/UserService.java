@@ -17,19 +17,19 @@ import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
-public class UserService {
-    private final UserRepository userRepository;
-    private final JobRepository jobRepository;
+        public class UserService {
+            private final UserRepository userRepository;
+            private final JobRepository jobRepository;
 
-    public List<UserResponse> findAll() {
-        List<User> users = userRepository.findAll();
-        List<UserResponse> userResponses = new ArrayList<>();
-        for (User user : users) {
-            UserResponse userResponse = UserResponse.builder()
-                    .nickname(user.getNickname())
-                    .email(user.getEmail()).build();
-            userResponses.add(userResponse);
-        }
+            public List<UserResponse> findAll() {
+                List<User> users = userRepository.findAll();
+                List<UserResponse> userResponses = new ArrayList<>();
+                for (User user : users) {
+                    UserResponse userResponse = UserResponse.builder()
+                            .nickname(user.getNickname())
+                            .email(user.getEmail()).build();
+                    userResponses.add(userResponse);
+                }
         return userResponses;
     }
     public SignupResponse signUp(SignupRequest request){
@@ -63,10 +63,10 @@ public class UserService {
                 .message("회원탈퇴 완료!")
                 .build();
     }
-    public UpdateResponse updateUser(UpdateRequest request){
-        User findUser = userRepository.findById(request.getUserId()).orElseThrow(()-> new NoSuchElementException("사용자를 찾을 수 없음"));
+    public UpdateResponse updateUser(UpdateRequest request) {
+        User findUser = userRepository.findById(request.getUserId()).orElseThrow(() -> new NoSuchElementException("사용자를 찾을 수 없음"));
 
-        Job findJob = jobRepository.findById(request.getJobId()).orElseThrow(()-> new NoSuchElementException("유효하지 않은 직무 ID"));
+        Job findJob = jobRepository.findById(request.getJobId()).orElseThrow(() -> new NoSuchElementException("유효하지 않은 직무 ID"));
 
         findUser.setJob(findJob);
 
@@ -76,7 +76,8 @@ public class UserService {
                 .jobId(findUser.getJob().getJobId())
                 .jobName(findUser.getJob().getJobName())
                 .build();
-
+    }
+    //
     public List<UserResponse> findAllWithCertAndSimulInfo() {
         return userRepository.findAllWithCertAndSimulInfo();
     }
