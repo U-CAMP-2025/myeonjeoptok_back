@@ -2,6 +2,7 @@ package com.ucamp.project.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+//
 
 @Entity
 @Table(name = "QA")
@@ -12,7 +13,13 @@ import lombok.*;
 @Builder
 public class Qa {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE,
+            generator = "qa_seq_gen")
+    @SequenceGenerator(
+            name = "qa_seq_gen",
+            sequenceName = "QA_SEQ",
+            allocationSize = 1
+    )
     @Column(name = "qa_id")
     private Long qaId;
 

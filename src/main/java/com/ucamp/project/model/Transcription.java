@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+//
 @Entity
 @Table(name = "TRANSCRIPTION")
 @Getter
@@ -14,7 +15,13 @@ import java.time.LocalDateTime;
 @Builder
 public class Transcription {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE,
+            generator = "transcription_seq_gen")
+    @SequenceGenerator(
+            name = "transcription_seq_gen",
+            sequenceName = "TRANSCRIPTION_SEQ",
+            allocationSize = 1
+    )
     @Column(name = "tr_id")
     private Long trId;
 
