@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
     private final KakaoOAuthService kakao;
@@ -34,15 +33,13 @@ public class AuthController {
     private final RefreshTokenService refreshSvc;
     private final CookieUtil cookieUtil;
 
-    // 1) 프론트가 이 URL로 리다이렉트시켜도 되고, 프론트에서 직접 카카오 authorize URL 만들어도 됨.
-    @GetMapping("/kakao/login")
+    @GetMapping("/api/auth/kakao/login")
     public void login(HttpServletResponse res) throws IOException {
         String url = kakao.buildAuthorizeUrl(); // state 포함
         res.sendRedirect(url);
     }
 
-    // 2) 카카오 콜백: 신규/기존 분기
-    @GetMapping("/kakao/callback")
+    @GetMapping("/auth/kakao/callback")
     public ResponseEntity<?> callback(@RequestParam String code, @RequestParam String state,
                                       HttpServletRequest req, HttpServletResponse res) throws Exception {
         KakaoProfile profile = kakao.exchangeAndGetProfile(code, state);
@@ -63,7 +60,7 @@ public class AuthController {
     }
 
     // 3) 회원가입 완료
-    @PostMapping("/complete-registration")
+    @PostMapping("/api/auth/signup")
     public ResponseEntity<?> complete(@RequestBody CompleteReq body,
                                       @CookieValue("registration_token") String regToken,
                                       HttpServletRequest req, HttpServletResponse res) throws Exception {
@@ -99,7 +96,7 @@ public class AuthController {
     }
 
     // 4) 토큰 재발급(로테이션)
-    @PostMapping("/refresh")
+    @PostMapping("/api/auth/refresh")
     public ResponseEntity<?> refresh(@CookieValue(name="refresh_token", required=false) String raw,
                                      HttpServletRequest req, HttpServletResponse res) throws Exception {
         if (raw == null || raw.isBlank()) return ResponseEntity.status(401).build();
@@ -112,7 +109,7 @@ public class AuthController {
     }
 
     // 5) 로그아웃
-    @PostMapping("/logout")
+    @PostMapping("/api/auth/logout")
     public ResponseEntity<?> logout(@AuthenticationPrincipal Long userId, HttpServletResponse res) {
         if (userId != null) refreshSvc.revokeAll(userId);
         cookieUtil.clearRefreshCookie(res);
