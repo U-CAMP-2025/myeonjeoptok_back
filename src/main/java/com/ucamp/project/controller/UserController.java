@@ -49,6 +49,7 @@ public class UserController {
         UpdateResponse user = userService.updateUser(request);
 
         return ResponseEntity.ok(user);
+    }
     @PostMapping("/regist")
     public String regist() {
         return "";
