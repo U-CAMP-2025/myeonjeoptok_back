@@ -33,4 +33,22 @@ public class Review {
     private LocalDateTime reviewCreatedAt;
 
 
+    @Transient
+    private Long userId;
+    @Transient
+    private Long postId;
+
+    @PrePersist
+    private void onCreate() {
+        if (this.user == null && this.userId != null) {
+            this.user = User.builder().userId(userId).build();
+        }
+        if (this.post == null && this.postId != null) {
+            this.post = Post.builder().postId(this.postId).build();
+        }
+        if (this.reviewCreatedAt == null) {
+            this.reviewCreatedAt = LocalDateTime.now();
+        }
+    }
+
 }

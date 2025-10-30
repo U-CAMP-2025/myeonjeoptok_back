@@ -41,4 +41,21 @@ public class Certificate {
 
     @Column(name = "cert_trmt_date")
     private LocalDateTime certTrmtDate;
+
+    @Transient
+    private Long userId;
+
+
+    @PrePersist
+    private void onCreate() {
+        if (this.user == null && this.userId != null) {
+            this.user = User.builder().userId(userId).build();
+        }
+        if (this.certReqDate == null) {
+            this.certReqDate = LocalDateTime.now();
+        }
+        if (this.certStatus == null) {
+            this.certStatus = "PENDING";
+        }
+    }
 }

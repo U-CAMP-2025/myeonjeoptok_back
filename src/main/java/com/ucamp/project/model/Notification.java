@@ -35,4 +35,18 @@ public class Notification {
 
     @Column(name = "noti_created_at")
     private LocalDateTime notiCreatedAt;
+
+    @Transient
+    private Long userId;
+
+
+    @PrePersist
+    private void onCreate() {
+        if (this.user == null && this.userId != null) {
+            this.user = User.builder().userId(userId).build();
+        }
+        if (this.notiCreatedAt == null) {
+            this.notiCreatedAt = LocalDateTime.now();
+        }
+    }
 }

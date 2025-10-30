@@ -36,7 +36,7 @@ public class Post {
     private Long count;
 
     @Column(name = "post_created_at",  nullable = false)
-    private LocalDate postCreatedAt;
+    private LocalDateTime postCreatedAt;
 
     @Column(name = "post_update_at")
     private LocalDateTime postUpdatedAt;
@@ -48,6 +48,25 @@ public class Post {
     @ManyToOne
     @JoinColumn(name = "post_other_writer")
     private User postOtherWriter;
+
+    @Transient
+    private Long userId;
+
+    @Transient
+    private Long postOtherWriterId;
+
+    @PrePersist
+    private void onCreate() {
+        if (this.user == null && this.userId != null) {
+            this.user = User.builder().userId(userId).build();
+        }
+        if (this.postOtherWriter == null && this.postOtherWriterId != null) {
+            this.postOtherWriter = User.builder().userId(postOtherWriterId).build();
+        }
+        if (this.postCreatedAt == null) {
+            this.postCreatedAt = LocalDateTime.now();
+        }
+    }
 
 
 

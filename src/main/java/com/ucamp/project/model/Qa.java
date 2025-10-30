@@ -29,4 +29,14 @@ public class Qa {
     @Column(name = "qa_answer", length = 500)
     private String qaAnswer;
 
+    @Transient
+    private Long postId;
+
+    @PrePersist
+    private void onCreate() {
+        if (this.post == null && this.postId != null) {
+            this.post = Post.builder().postId(this.postId).build();
+        }
+    }
+
 }
