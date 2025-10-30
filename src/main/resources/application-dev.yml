@@ -21,3 +21,22 @@ spring:
 
 server:
   port: 8080
+
+app:
+  frontend-origin: "http://localhost:3000"
+  jwt:
+    issuer: "api.example.com"
+    access-exp-minutes: 15
+    refresh-exp-days: 7
+    secret: "${JWT_SECRET}"
+  cookie:
+    refresh:
+      name: "refresh_token"
+      domain: "localhost"
+      path: "/auth"
+      secure: false
+      same-site: "Lax"
+  kakao:
+    client-id: "${KAKAO_CLIENT_ID}"
+    client-secret: "${KAKAO_CLIENT_SECRET}"
+    redirect-uri: "http://localhost:8080/auth/kakao/callback"

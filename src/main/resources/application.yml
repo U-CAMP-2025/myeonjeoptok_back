@@ -17,3 +17,9 @@ logging:
   level:
     org.hibernate.SQL: debug
     org.hibernate.orm.jdbc.bind: trace
+
+# 카카오 고정 URI
+app:
+  kakao:
+    token-uri: "https://kauth.kakao.com/oauth/token"
+    userinfo-uri: "https://kapi.kakao.com/v2/user/me"
