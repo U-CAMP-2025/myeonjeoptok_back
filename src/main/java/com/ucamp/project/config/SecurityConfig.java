@@ -33,8 +33,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(STATELESS))
                 .authorizeHttpRequests(reg -> reg
-                        .requestMatchers("/auth/**", "/health").permitAll()
-                        .requestMatchers("/api/auth/**", "/health").permitAll()
+                        .requestMatchers("/auth/**", "/api/auth/**", "/h2-console/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()
                 )
@@ -43,7 +42,7 @@ public class SecurityConfig {
                     CorsConfiguration c = new CorsConfiguration();
                     c.setAllowedOrigins(List.of(props.getFrontendOrigin()));
                     c.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
-                    c.setAllowedHeaders(List.of("Authorization","Content-Type"));
+                    c.setAllowedHeaders(List.of("*"));
                     c.setAllowCredentials(true);
                     c.setMaxAge(3600L);
                     return c;

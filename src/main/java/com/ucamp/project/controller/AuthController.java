@@ -33,7 +33,7 @@ public class AuthController {
     private final RefreshTokenService refreshSvc;
     private final CookieUtil cookieUtil;
 
-    @GetMapping("/api/auth/kakao/login")
+    @GetMapping("/auth/kakao/login")
     public void login(HttpServletResponse res) throws IOException {
         String url = kakao.buildAuthorizeUrl(); // state 포함
         res.sendRedirect(url);
@@ -51,10 +51,10 @@ public class AuthController {
             String registrationToken = kakao.issueRegistrationToken(profile);
             ResponseCookie cookie = ResponseCookie.from("registration_token", registrationToken)
                     .httpOnly(true).secure(true).sameSite("Strict")
-                    .path("/auth").maxAge(Duration.ofMinutes(5)).build();
+                    .path("/api/auth").maxAge(Duration.ofMinutes(5)).build();
             res.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
             // 프론트 가입 페이지로 리다이렉트
-            URI to = URI.create("http://localhost:3000/signup");
+            URI to = URI.create("http://localhost:3000/auth/signup");
             return ResponseEntity.status(HttpStatus.FOUND).location(to).build();
         }
     }
