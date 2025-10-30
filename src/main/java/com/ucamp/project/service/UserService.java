@@ -1,8 +1,6 @@
 package com.ucamp.project.service;
 
-import com.ucamp.project.dto.SignupRequest;
-import com.ucamp.project.dto.SignupResponse;
-import com.ucamp.project.dto.UserResponse;
+import com.ucamp.project.dto.*;
 import com.ucamp.project.model.Job;
 import com.ucamp.project.model.User;
 import com.ucamp.project.repository.JobRepository;
@@ -32,7 +30,7 @@ public class UserService {
     }
     public SignupResponse signUp(SignupRequest request){
 
-        Job job = jobRepository.findById(request.getJobId()).orElseThrow(()-> new NoSuchElementException());
+        Job job = jobRepository.findById(request.getJobId()).orElseThrow(()-> new NoSuchElementException("유효하지 않은 직무 ID"));
 
         User user = User.builder()
                 .nickname(request.getNickname())
@@ -50,5 +48,29 @@ public class UserService {
                 .kakaoId(saveUser.getKakaoId())
                 .build();
     }
+    public DeleteResponse deleteUser(Long userId){
+        User user = userRepository.findById(userId).orElseThrow(() -> new NoSuchElementException("사용자를 찾을 수 없음"));
 
+        user.setStatus("DISABLED");
+        userRepository.save(user);
+
+        return DeleteResponse.builder()
+                .status("SUCCESS")
+                .message("회원탈퇴 완료!")
+                .build();
+    }
+    public UpdateResponse updateUser(UpdateRequest request){
+        User findUser = userRepository.findById(request.getUserId()).orElseThrow(()-> new NoSuchElementException("사용자를 찾을 수 없음"));
+
+        Job findJob = jobRepository.findById(request.getJobId()).orElseThrow(()-> new NoSuchElementException("유효하지 않은 직무 ID"));
+
+        findUser.setJob(findJob);
+
+        userRepository.save(findUser);
+
+        return UpdateResponse.builder()
+                .jobId(findUser.getJob().getJobId())
+                .jobName(findUser.getJob().getJobName())
+                .build();
+    }
 }

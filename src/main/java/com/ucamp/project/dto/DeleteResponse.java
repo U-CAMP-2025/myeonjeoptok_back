@@ -6,7 +6,7 @@ import lombok.Data;
 
 @Data
 @Builder
-public class JobResponse {
-    private Long jobId;
-    private String jobName;
+public class DeleteResponse {
+    private String status;
+    private String message;
 }

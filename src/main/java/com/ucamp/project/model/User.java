@@ -15,6 +15,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE,
             generator = "user_seq_gen")     // @SeqGen의 별명과 연결

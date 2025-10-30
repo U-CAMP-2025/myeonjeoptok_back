@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class Simulation {
+    //
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE,
             generator = "simulation_seq_gen")

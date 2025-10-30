@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDateTime;
+//
 
 @Entity
 @Table(name = "NOTIFICATION")

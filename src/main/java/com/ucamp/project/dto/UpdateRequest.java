@@ -6,10 +6,7 @@ import lombok.Data;
 
 @Data
 @Builder
-public class SignupResponse {
+public class UpdateRequest {
     private Long userId;
-    private String nickname;
-    private String email;
     private Long jobId;
-    private String kakaoId;
 }
