@@ -7,7 +7,7 @@ import java.util.*;
 
 @Component
 public class SseComponent {
-
+    //
     // 빈으로 등록된 SseEmitter 리스트
     private final Map<Long,SseEmitter> emitters = new HashMap<>();
 

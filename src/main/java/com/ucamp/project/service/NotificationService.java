@@ -18,6 +18,7 @@ import java.util.Optional;
 @Service
 public class NotificationService {
 
+
     private final NotificationRepository notificationRepository;
 
     public List<NotificationResponse> findAll(Long userId) {

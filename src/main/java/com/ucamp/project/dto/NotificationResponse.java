@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 @Data
 @Builder
 public class NotificationResponse {
+
     private Long notiId;
     private String content;
     private String type;

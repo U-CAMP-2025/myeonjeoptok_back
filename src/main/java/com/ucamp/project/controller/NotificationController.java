@@ -17,7 +17,6 @@ import java.net.http.HttpResponse;
 @RequiredArgsConstructor
 @RequestMapping("/api/notifications")
 public class NotificationController {
-
     private final SseComponent sseComponent;
     private final NotificationService notificationService;
 

@@ -13,6 +13,7 @@ import java.util.List;
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
+
     @Query("SELECT noti FROM Notification noti WHERE noti.user.userId = :userId ORDER BY noti.notiRead, noti.notiCreatedAt")
     List<Notification> findAllByUserId(@Param("userId") Long userId);
 
