@@ -29,10 +29,10 @@ public class AuthController {
     private final UserRepository users;
     private final JwtTokenProvider jwt;
 
-
     @Value("${kakao.client-id}")     String clientId;
     @Value("${kakao.client-secret}") String clientSecret;
     @Value("${kakao.redirect-uri}")  String redirectUri;
+    @Value("${client.origin:http://localhost:3000}") String clientOrigin;
 
     // 1. 인가 코드 요청
     @GetMapping("/kakao/login")
@@ -96,8 +96,8 @@ public class AuthController {
 
             // 기존 유저: 프론트 홈으로 토큰 전달 리다이렉트
             String redirectUrl = String.format(
-                    "http://localhost:3000/login/bridge?accessToken=%s&refreshToken=%s&nickname=%s&profileImageUrl=%s",
-                    at, rt, nickname, profileImageUrl
+                    "%s/login/bridge?accessToken=%s&refreshToken=%s&nickname=%s&profileImageUrl=%s",
+                    clientOrigin, at, rt, nickname, profileImageUrl
             );
             return ResponseEntity.status(302).location(URI.create(redirectUrl)).build();
         }
@@ -107,7 +107,7 @@ public class AuthController {
         session.setAttribute("P_EMAIL", email);
         session.setAttribute("P_PROFILE", profile);
 
-        String redirectUrl = "http://localhost:3000/signup";
+        String redirectUrl = clientOrigin + "/signup";
         return ResponseEntity.status(302).location(URI.create(redirectUrl)).build();
     }
 
