@@ -25,13 +25,10 @@ public class ReviewController {
     private final ReviewService reviewService;
 
     @GetMapping
-    public ApiResponse<Object> getReview(@PathVariable Long postId){
-        ApiResponse<Object> res = ApiResponse.builder()
-                .code(200)
-                .message("success")
-                .data(reviewService.findReviewsByPostId(postId))
-                .build();
-        return res;
+    public ResponseEntity<List<ReviewResponse>> getReviewsByPostId(
+            @PathVariable Long postId) {
+        List<ReviewResponse> reviewList = reviewService.findReviewsByPostId(postId);
+        return ResponseEntity.ok(reviewList);
     }
 
     @PostMapping
