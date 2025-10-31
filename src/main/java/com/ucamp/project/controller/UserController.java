@@ -5,7 +5,6 @@ import com.ucamp.project.model.User;
 import com.ucamp.project.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import com.ucamp.project.dto.UserResponse;
 import com.ucamp.project.model.Job;
@@ -28,17 +27,16 @@ public class UserController {
 
     @GetMapping("/all")
     public List<UserResponse> getAll() {
+        log.info("ㅁㄴㅇㄹㅇㅁㄴㄹ");
         return userService.findAll();
     }
 
-    // 회원가입 요청. nickname, email, jobId, kakaoId 입력받아 회원 가입.
     @PostMapping("/signup")
     public ResponseEntity<SignupResponse> signUp(@RequestBody SignupRequest request){
         SignupResponse user = userService.signUp(request);
         return ResponseEntity.ok(user);
     }
 
-    // 회원탈퇴 요청. 요청한 userId에 해당하는 유저의 status를 disabled로 변경.
     @DeleteMapping("/userDel")
     public ResponseEntity<DeleteResponse> deleteUser(@RequestParam("userId") Long userId){
         DeleteResponse user = userService.deleteUser(userId);
@@ -46,18 +44,14 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
-    // 회원 직무 수정 요청. userId와 일치하는 User의 jobId 수정.
-    @PutMapping("/pathJob")
-    public ResponseEntity<UpdateResponse> updateUserJob(@RequestBody UpdateRequest request){
-        UpdateResponse user = userService.updateUserJob(request);
+    @PutMapping("/userUpdate")
+    public ResponseEntity<UpdateResponse> updateUser(@RequestBody UpdateRequest request){
+        UpdateResponse user = userService.updateUser(request);
+
         return ResponseEntity.ok(user);
     }
-
-    // 마이페이지 요청
-    // TODO: 소셜 로그인 및 JWT 사용 예정이므로, 임시로 userId = 1로 테스트.
-    @GetMapping("/mypage")
-    public UserDTO myPage(/*@AuthenticationPrincipal CustomUserDetails userDetails*/) {
-        // Long userId = userDetails.getUserId();
-        return userService.findUserByUserId(1L);
+    @PostMapping("/regist")
+    public String regist() {
+        return "";
     }
 }
