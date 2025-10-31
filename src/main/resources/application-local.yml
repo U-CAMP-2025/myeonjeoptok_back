@@ -19,7 +19,25 @@ spring:
 #    database-platform: org.hibernate.dialect.H2Dialect
     database-platform: org.hibernate.dialect.OracleDialect
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+        highlight_sql: true
 
 server:
   port: 8080
+
+
+# Kakao OAuth settings (must exactly match Kakao Dev Console)
+kakao:
+  client-id: "${KAKAO_CLIENT_ID}"
+  client-secret: "${KAKAO_CLIENT_SECRET}"
+  redirect-uri: "http://localhost:8080/api/auth/kakao/callback"
+
+jwt:
+  secret: "${JWT_SECRET}"           # >= 32 chars
+  access-expiration: 3600000         # 1 hour (ms)
+  refresh-expiration: 1209600000     # 14 days (ms)

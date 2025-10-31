@@ -58,6 +58,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
         INNER JOIN Certificate c ON c.user.userId = u.userId
     """)
     List<UserWithCertDTO> findAllWithCert();
+    Optional<User> findByKakaoId(String kakaoId);
+    Optional<User> findByNickname(String nickname);
 
 
     // 시뮬레이션 변환 처리 상태 현황 조회.
