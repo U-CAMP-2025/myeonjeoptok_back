@@ -53,8 +53,11 @@ public class UserController {
         UpdateResponse user = userService.updateUserJob(request);
         return ResponseEntity.ok(user);
     }
-    @PostMapping("/regist")
-    public String regist() {
-        return "";
+    // 마이페이지 요청
+    // TODO: 소셜 로그인 및 JWT 사용 예정이므로, 임시로 userId = 1로 테스트.
+    @GetMapping("/mypage")
+    public UserDTO myPage(/*@AuthenticationPrincipal CustomUserDetails userDetails*/) {
+        // Long userId = userDetails.getUserId();
+        return userService.findUserByUserId(1L);
     }
 }
