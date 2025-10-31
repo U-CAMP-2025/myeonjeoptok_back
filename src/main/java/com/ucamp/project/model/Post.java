@@ -7,6 +7,8 @@ import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 //
 
 @Entity
@@ -61,6 +63,11 @@ public class Post {
 
     @Transient
     private Long postOtherWriterId;
+
+    // 양방향 참조
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("qaOrder ASC") // 정렬
+    private List<Qa> qaList = new ArrayList<>();
 
     @PrePersist
     private void onCreate() {

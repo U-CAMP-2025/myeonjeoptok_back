@@ -32,7 +32,6 @@ import java.util.NoSuchElementException;
                 }
         return userResponses;
     }
-    // 회원가입. 닉네임, 이메일(카카오에서 제공), 직무 입력받아 처리.
     public SignupResponse signUp(SignupRequest request){
 
         Job job = jobRepository.findById(request.getJobId()).orElseThrow(()-> new NoSuchElementException("유효하지 않은 직무 ID"));
@@ -53,8 +52,6 @@ import java.util.NoSuchElementException;
                 .kakaoId(saveUser.getKakaoId())
                 .build();
     }
-
-    // 회원탈퇴. userId에 해당하는 User의 status를 DISABLED로 변경.
     public DeleteResponse deleteUser(Long userId){
         User user = userRepository.findById(userId).orElseThrow(() -> new NoSuchElementException("사용자를 찾을 수 없음"));
 
@@ -66,9 +63,7 @@ import java.util.NoSuchElementException;
                 .message("회원탈퇴 완료!")
                 .build();
     }
-
-    // 회원 직무 수정.
-    public UpdateResponse updateUserJob(UpdateRequest request) {
+    public UpdateResponse updateUser(UpdateRequest request) {
         User findUser = userRepository.findById(request.getUserId()).orElseThrow(() -> new NoSuchElementException("사용자를 찾을 수 없음"));
 
         Job findJob = jobRepository.findById(request.getJobId()).orElseThrow(() -> new NoSuchElementException("유효하지 않은 직무 ID"));
@@ -82,12 +77,11 @@ import java.util.NoSuchElementException;
                 .jobName(findUser.getJob().getJobName())
                 .build();
     }
-    // User + Certification + Simulation 전체 조회
+    //
     public List<UserResponse> findAllWithCertAndSimulInfo() {
         return userRepository.findAllWithCertAndSimulInfo();
     }
 
-    // User + Certification 전체 조회
     public List<UserWithCertDTO> findAllWithCert() { ;
         return userRepository.findAllWithCert();
     }

@@ -26,7 +26,8 @@ public class Qa {
     @Column(name = "qa_order", nullable = false)
     private Long qaOrder;
 
-    @ManyToOne
+    // 양방향 참조
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id")
     private Post post;
 
