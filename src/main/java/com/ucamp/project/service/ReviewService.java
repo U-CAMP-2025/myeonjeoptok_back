@@ -65,4 +65,8 @@ public class ReviewService {
 
         reviewRepository.delete(review);
     }
+
+    public Object save(Review review) {
+        return reviewRepository.save(review);
+    }
 }

@@ -1,7 +1,11 @@
 package com.ucamp.project.controller;
 
+import com.ucamp.project.dto.ApiResponse;
 import com.ucamp.project.dto.ReviewRequest;
 import com.ucamp.project.dto.ReviewResponse;
+import com.ucamp.project.model.Review;
+import com.ucamp.project.model.Simulation;
+import com.ucamp.project.model.User;
 import com.ucamp.project.service.ReviewService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,10 +25,13 @@ public class ReviewController {
     private final ReviewService reviewService;
 
     @GetMapping
-    public ResponseEntity<List<ReviewResponse>> getReviewsByPostId(@PathVariable Long postId) {
-
-        List<ReviewResponse> reviewList = reviewService.findReviewsByPostId(postId);
-        return ResponseEntity.ok(reviewList);
+    public ApiResponse<Object> getReview(@PathVariable Long postId){
+        ApiResponse<Object> res = ApiResponse.builder()
+                .code(200)
+                .message("success")
+                .data(reviewService.findReviewsByPostId(postId))
+                .build();
+        return res;
     }
 
     @PostMapping
