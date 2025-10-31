@@ -20,6 +20,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("""
         SELECT new com.ucamp.project.dto.UserResponse(
+            u.userId,
             u.nickname,
             u.email,
             j.jobId,
