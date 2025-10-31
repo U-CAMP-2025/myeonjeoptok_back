@@ -85,4 +85,20 @@ import java.util.NoSuchElementException;
     public List<UserWithCertDTO> findAllWithCert() { ;
         return userRepository.findAllWithCert();
     }
+
+    // userId로 User 조회
+    public UserDTO findUserByUserId(Long userId) {
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("해당 유저 없음"));
+
+        return UserDTO.builder()
+                .userId(String.valueOf(user.getUserId()))
+                .nickname(user.getNickname())
+                .email(user.getEmail())
+                .job(user.getJob())
+                .passStatus(user.getPassStatus())
+                .status(user.getStatus())
+                .userProfileImageUrl(user.getUsersProfileImageUrl())
+                .build();
+    }
 }
