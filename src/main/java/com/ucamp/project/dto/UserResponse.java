@@ -22,13 +22,14 @@ public class UserResponse {
     private String certStatus;
     private LocalDateTime certReqDate;
     private LocalDateTime certTrmtDate;
+    private String certFileUrl;
 
 
     // 관리자 페이지에서 유저 전체 조회용 생성자
     public UserResponse(Long userId, String nickname, String email, Long jobId, String jobName,
                         String passStatus, LocalDateTime createdAt, String role,
                         String simulationStatus, LocalDateTime simulationCompletedAt,
-                        String certStatus, LocalDateTime certReqDate, LocalDateTime certTrmtDate) {
+                        String certStatus, LocalDateTime certReqDate, LocalDateTime certTrmtDate, String certFileUrl) {
         this.userId = userId;
         this.nickname = nickname;
         this.email = email;
@@ -42,5 +43,6 @@ public class UserResponse {
         this.certStatus = certStatus;
         this.certReqDate = certReqDate;
         this.certTrmtDate = certTrmtDate;
+        this.certFileUrl = certFileUrl;
     }
 }

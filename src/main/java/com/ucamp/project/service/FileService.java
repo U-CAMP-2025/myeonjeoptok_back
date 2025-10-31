@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -12,6 +13,7 @@ import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 
@@ -43,5 +45,24 @@ public class FileService {
 
         return Pair.of(contentType, imageResource);
 
+    }
+
+
+    public String saveFile(String type, MultipartFile file) {
+        try {
+            Path dirPath = Paths.get("src/main/resources/static/image/" + type);
+            if (!Files.exists(dirPath)) {
+                Files.createDirectories(dirPath);
+            }
+
+            // UUID로 파일명 중복 방지
+            String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+            Path filePath = dirPath.resolve(fileName);
+
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            return fileName;
+        } catch (IOException e) {
+            throw new RuntimeException("파일 저장 실패", e);
+        }
     }
 }

@@ -9,14 +9,15 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 
 @Controller
 @RequiredArgsConstructor
@@ -35,5 +36,15 @@ public class FileController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + pair.getRight().getFilename() + "\"")
                 .body(pair.getRight());
 
+    }
+
+    // 파일 업로드
+    @PostMapping("/api/files/{type}")
+    public ResponseEntity<Map<String, String>> uploadFile(
+            @PathVariable String type,
+            @RequestPart("file") MultipartFile file) {
+
+        String fileName = fileService.saveFile(type, file);
+        return ResponseEntity.ok(Map.of("fileName", fileName));
     }
 }

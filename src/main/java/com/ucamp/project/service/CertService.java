@@ -20,7 +20,7 @@ public class CertService {
     // 유저 합격 처리
     @Transactional
     public CertDTO trmtCertReq(Long userId, String passStatus) {
-        // 1. User 조회 후 해당 유저의 passStatus 업데이트
+        // 1. User 조회
         User user = userRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("해당 유저 없음"));
 
@@ -48,5 +48,18 @@ public class CertService {
                 .certTrmtDate(cert.getCertTrmtDate())
                 .certStatus(cert.getCertStatus())
                 .build();
+    }
+
+    public void createCertificate(Long userId, String fileName) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("유저 없음"));
+
+        Certificate cert = Certificate.builder()
+                .user(user)
+                .certFileUrl("/api/files/image/cert/" + fileName)
+                .certStatus("PENDING")
+                .build();
+
+        certRepository.save(cert);
     }
 }
