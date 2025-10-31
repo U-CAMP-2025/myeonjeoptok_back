@@ -63,7 +63,7 @@ import java.util.NoSuchElementException;
                 .message("회원탈퇴 완료!")
                 .build();
     }
-    public UpdateResponse updateUser(UpdateRequest request) {
+    public UpdateResponse updateUserJob(UpdateRequest request) {
         User findUser = userRepository.findById(request.getUserId()).orElseThrow(() -> new NoSuchElementException("사용자를 찾을 수 없음"));
 
         Job findJob = jobRepository.findById(request.getJobId()).orElseThrow(() -> new NoSuchElementException("유효하지 않은 직무 ID"));
