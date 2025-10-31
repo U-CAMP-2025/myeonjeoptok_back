@@ -157,7 +157,6 @@ public class AuthController {
         return ResponseEntity.ok(responseBody);
     }
 
-
     @PostMapping("/refresh")
     public Map<String,String> refresh(@RequestBody Map<String,String> b){
         String rt = b.get("refreshToken");
@@ -171,5 +170,43 @@ public class AuthController {
         u.setRefreshToken(newRt);
         users.save(u);
         return Map.of("accessToken", at, "refreshToken", newRt);
+    }
+
+    @GetMapping("/nickname/check")
+    public ResponseEntity<Map<String, Object>> checkNickname(@RequestParam String nickname, @RequestParam(required = false) Long excludeUserId) {
+        String n = (nickname == null ? "": java.net.URLDecoder.decode(
+                nickname, java.nio.charset.StandardCharsets.UTF_8
+        )).trim();
+
+        // 형식 검증
+        if (n.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "available", false,
+                    "reason", "EMPTY",
+                    "message", "닉네임을 입력하세요."
+            ));
+        }
+        System.out.println("닉네임: " + n);
+        if (!n.matches("^[A-Za-z0-9가-힣_]{2,10}$")) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "available", false,
+                    "reason", "INVALID_FORMAT",
+                    "message", "닉네임은 2~10자의 한글/영문/숫자/밑줄만 사용할 수 있습니다."
+            ));
+        }
+
+        // 중복 여부 체크
+        boolean exists;
+        if (excludeUserId == null) {
+            exists = users.existsByNicknameIgnoreCase(n);
+        } else {
+            var found = users.findByNicknameIgnoreCase(n);
+            exists = found.isPresent() && !found.get().getUserId().equals(excludeUserId);
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "available", !exists,
+                "normalized", n
+        ));
     }
 }

@@ -92,4 +92,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
             ) s2 ON s1.simulation_id = s2.simulation_id
         """, nativeQuery = true)
     List<UserWithSimulDTO> findAllTranscriptionStatus();
+    boolean existsByNicknameIgnoreCase(String nickname);
+    Optional<User> findByNicknameIgnoreCase(String nickname);
 }
