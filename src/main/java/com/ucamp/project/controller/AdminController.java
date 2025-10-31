@@ -3,6 +3,8 @@ package com.ucamp.project.controller;
 import com.ucamp.project.dto.CertDTO;
 import com.ucamp.project.dto.UserResponse;
 import com.ucamp.project.dto.UserWithCertDTO;
+import com.ucamp.project.dto.UserWithSimulDTO;
+import com.ucamp.project.service.AdminService;
 import com.ucamp.project.service.CertService;
 import com.ucamp.project.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,9 @@ import java.util.Map;
 public class AdminController {
     private final UserService userService;
     private final CertService certService;
+    private final AdminService adminService;
+
+    // 유저 전체 조회
     @GetMapping("/users")
     public List<UserResponse> findAllUsers() {
         log.info("요청 들어옴?");
@@ -30,6 +35,7 @@ public class AdminController {
         return userService.findAllWithCert();
     }
 
+    // '합격자' 요청 처리
     @PatchMapping("/pathPass")
     public CertDTO trmtCertReq(@RequestBody Map<String, String> request) {
         Long userId = Long.valueOf(request.get("userId"));
@@ -37,5 +43,13 @@ public class AdminController {
 
         return certService.trmtCertReq(userId, passStatus);
     }
+
+    // 시뮬레이션 처리 상태를 목록으로 조회
+    @GetMapping("/transcription")
+    public List<UserWithSimulDTO> findAllTranscriptionStatus() {
+        return adminService.findAllTranscriptionStatus();
+    }
+
+
 
 }

@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Data
 @Builder
 public class UserResponse {
+    private Long userId;
     private String nickname;
     private String email;
     private Long jobId;
@@ -24,10 +25,11 @@ public class UserResponse {
 
 
     // 관리자 페이지에서 유저 전체 조회용 생성자
-    public UserResponse(String nickname, String email, Long jobId, String jobName,
+    public UserResponse(Long userId, String nickname, String email, Long jobId, String jobName,
                         String passStatus, LocalDateTime createdAt, String role,
                         String simulationStatus, LocalDateTime simulationCompletedAt,
                         String certStatus, LocalDateTime certReqDate, LocalDateTime certTrmtDate) {
+        this.userId = userId;
         this.nickname = nickname;
         this.email = email;
         this.jobId = jobId;

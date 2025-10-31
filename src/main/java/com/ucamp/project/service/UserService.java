@@ -63,7 +63,7 @@ import java.util.NoSuchElementException;
                 .message("회원탈퇴 완료!")
                 .build();
     }
-    public UpdateResponse updateUser(UpdateRequest request) {
+    public UpdateResponse updateUserJob(UpdateRequest request) {
         User findUser = userRepository.findById(request.getUserId()).orElseThrow(() -> new NoSuchElementException("사용자를 찾을 수 없음"));
 
         Job findJob = jobRepository.findById(request.getJobId()).orElseThrow(() -> new NoSuchElementException("유효하지 않은 직무 ID"));
@@ -84,5 +84,21 @@ import java.util.NoSuchElementException;
 
     public List<UserWithCertDTO> findAllWithCert() { ;
         return userRepository.findAllWithCert();
+    }
+
+    // userId로 User 조회
+    public UserDTO findUserByUserId(Long userId) {
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("해당 유저 없음"));
+
+        return UserDTO.builder()
+                .userId(String.valueOf(user.getUserId()))
+                .nickname(user.getNickname())
+                .email(user.getEmail())
+                .job(user.getJob())
+                .passStatus(user.getPassStatus())
+                .status(user.getStatus())
+                .userProfileImageUrl(user.getUsersProfileImageUrl())
+                .build();
     }
 }

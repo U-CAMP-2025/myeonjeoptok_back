@@ -33,22 +33,28 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
-    @DeleteMapping("/userDel")
-    public ResponseEntity<DeleteResponse> deleteUser(@RequestParam("userId") Long userId){
-        DeleteResponse user = userService.deleteUser(userId);
+    // 회원탈퇴 요청. 요청한 userId에 해당하는 유저의 status를 disabled로 변경.
+    @PutMapping("/userDel")
+    public ResponseEntity<DeleteResponse> deleteUser(@RequestBody DelReq req){
+        log.info("userId? :{}", req.getUserId());
+        DeleteResponse user = userService.deleteUser(req.getUserId());
 
         return ResponseEntity.ok(user);
     }
 
-    @PutMapping("/userUpdate")
-    public ResponseEntity<UpdateResponse> updateUser(@RequestBody UpdateRequest request){
-        UpdateResponse user = userService.updateUser(request);
-
+    // 회원 직무 수정 요청. userId와 일치하는 User의 jobId 수정.
+    @PatchMapping("/pathJob")
+    public ResponseEntity<UpdateResponse> updateUserJob(@RequestBody UpdateRequest request){
+        log.info("요청 정보: {}",request.toString());
+        UpdateResponse user = userService.updateUserJob(request);
         return ResponseEntity.ok(user);
     }
-    @PostMapping("/regist")
-    public String regist() {
-        return "";
+    // 마이페이지 요청
+    // TODO: 소셜 로그인 및 JWT 사용 예정이므로, 임시로 userId = 1로 테스트.
+    @GetMapping("/mypage")
+    public UserDTO myPage(/*@AuthenticationPrincipal CustomUserDetails userDetails*/) {
+        // Long userId = userDetails.getUserId();
+        return userService.findUserByUserId(1L);
     }
 
 }

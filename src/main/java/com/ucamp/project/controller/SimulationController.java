@@ -1,6 +1,7 @@
 package com.ucamp.project.controller;
 
 import com.ucamp.project.dto.ApiResponse;
+import com.ucamp.project.dto.SimulationDetailResponse;
 import com.ucamp.project.model.Simulation;
 import com.ucamp.project.model.User;
 import com.ucamp.project.service.InterViewerService;
@@ -42,6 +43,17 @@ public class SimulationController {
                 .code(200)
                 .message("success")
                 .data(simulationService.save(simulation))
+                .build();
+        return resp;
+    }
+
+    @GetMapping("/{id}")
+    public ApiResponse<Object> getSimulation(@PathVariable Long id) {
+        SimulationDetailResponse data = simulationService.findDetail(id);
+        ApiResponse<Object> resp = ApiResponse.builder()
+                .code(200)
+                .message("success")
+                .data(data)
                 .build();
         return resp;
     }
