@@ -1,15 +1,11 @@
 package com.ucamp.project.controller;
 
 import com.ucamp.project.dto.*;
-import com.ucamp.project.model.User;
 import com.ucamp.project.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.ucamp.project.dto.UserResponse;
-import com.ucamp.project.model.Job;
-import com.ucamp.project.service.UserService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -54,4 +50,5 @@ public class UserController {
     public String regist() {
         return "";
     }
+
 }

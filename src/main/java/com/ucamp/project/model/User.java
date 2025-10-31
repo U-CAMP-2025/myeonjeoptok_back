@@ -61,6 +61,9 @@ public class User {
     @Transient
     private Long jobId;
 
+    @Column
+    private String refreshToken;
+
     @PrePersist
     private void onCreate() {
         if (this.createdAt == null) {
