@@ -98,9 +98,10 @@ import java.util.NoSuchElementException;
                 .orElseThrow(() -> new RuntimeException("해당 유저 없음"));
 
         return UserDTO.builder()
+                .userId(String.valueOf(user.getUserId()))
                 .nickname(user.getNickname())
                 .email(user.getEmail())
-                .job(user.getJob().getJobName())
+                .job(user.getJob())
                 .passStatus(user.getPassStatus())
                 .status(user.getStatus())
                 .userProfileImageUrl(user.getUsersProfileImageUrl())

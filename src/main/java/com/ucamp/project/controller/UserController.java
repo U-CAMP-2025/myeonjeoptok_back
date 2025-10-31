@@ -39,16 +39,18 @@ public class UserController {
     }
 
     // 회원탈퇴 요청. 요청한 userId에 해당하는 유저의 status를 disabled로 변경.
-    @DeleteMapping("/userDel")
-    public ResponseEntity<DeleteResponse> deleteUser(@RequestParam("userId") Long userId){
-        DeleteResponse user = userService.deleteUser(userId);
+    @PutMapping("/userDel")
+    public ResponseEntity<DeleteResponse> deleteUser(@RequestBody DelReq req){
+        log.info("userId? :{}", req.getUserId());
+        DeleteResponse user = userService.deleteUser(req.getUserId());
 
         return ResponseEntity.ok(user);
     }
 
     // 회원 직무 수정 요청. userId와 일치하는 User의 jobId 수정.
-    @PutMapping("/pathJob")
+    @PatchMapping("/pathJob")
     public ResponseEntity<UpdateResponse> updateUserJob(@RequestBody UpdateRequest request){
+        log.info("요청 정보: {}",request.toString());
         UpdateResponse user = userService.updateUserJob(request);
         return ResponseEntity.ok(user);
     }
