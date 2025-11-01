@@ -1,5 +1,6 @@
 package com.ucamp.project.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ucamp.project.model.Review;
 import com.ucamp.project.model.User;
 import lombok.AllArgsConstructor;
@@ -13,20 +14,20 @@ import java.time.LocalDateTime;
 @Builder
 public class ReviewResponse {
     private Long reviewId;
-    private String reviewContent;
-    private LocalDateTime reviewCreatedAt;
-    private Long userId;
-    private String username; // 예시
+    private String nickname;
+    private String content;
+    private LocalDateTime createdAt;
+    private String profileImage;
 
     public static ReviewResponse fromEntity(Review review) {
         User user = review.getUser();
 
         return ReviewResponse.builder()
                 .reviewId(review.getReviewId())
-                .reviewContent(review.getReviewContent())
-                .reviewCreatedAt(review.getReviewCreatedAt())
-                .userId(user != null ? user.getUserId() : null)
-                .username(user != null ? user.getNickname() : "유저없어요")
+                .content(review.getReviewContent())
+                .createdAt(review.getReviewCreatedAt())
+                .nickname(user != null ? user.getNickname() : "유저없어요")
+                .profileImage(user != null ? user.getUsersProfileImageUrl() : null)
                 .build();
     }
 }

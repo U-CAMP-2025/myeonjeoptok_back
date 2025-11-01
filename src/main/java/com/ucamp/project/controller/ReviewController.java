@@ -35,8 +35,8 @@ public class ReviewController {
     public ResponseEntity<ReviewResponse> createReview(
             @PathVariable Long postId,
             @RequestBody ReviewRequest reviewRequest,
-            @AuthenticationPrincipal Long userId) {
-        ReviewResponse createdReview = reviewService.createReview(postId, userId, reviewRequest);
+            @AuthenticationPrincipal User user) {
+        ReviewResponse createdReview = reviewService.createReview(postId, user.getUserId(), reviewRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdReview);
     }
 
@@ -44,9 +44,9 @@ public class ReviewController {
     public ResponseEntity<Void> deleteReview(
             @PathVariable Long postId,
             @PathVariable Long reviewId,
-            @AuthenticationPrincipal Long userId) {
+            @AuthenticationPrincipal User user) {
 
-        reviewService.deleteReview(postId, reviewId, userId);
+        reviewService.deleteReview(postId, reviewId, user.getUserId());
 
         return ResponseEntity.noContent().build();
     }

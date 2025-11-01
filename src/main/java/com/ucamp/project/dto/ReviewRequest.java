@@ -4,9 +4,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
 @RequiredArgsConstructor
 public class ReviewRequest {
-    private String reviewContent;
+    private String content;
 }
 

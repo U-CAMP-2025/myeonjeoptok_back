@@ -43,7 +43,7 @@ public class ReviewService {
         Review newReview = Review.builder()
                 .post(post)
                 .user(user)
-                .reviewContent(request.getReviewContent())
+                .reviewContent(request.getContent())
                 .build();
 
         Review reviewSaved = reviewRepository.save(newReview);
