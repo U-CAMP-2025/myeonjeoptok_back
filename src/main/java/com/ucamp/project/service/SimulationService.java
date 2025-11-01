@@ -63,6 +63,7 @@ public class SimulationService {
         return SimulationDetailResponse.builder()
                 .interviewer(interviewerDto)
                 .post(postDto)
+                .simulationRandom(sim.getSimulationRandom())
                 .build();
     }
 
