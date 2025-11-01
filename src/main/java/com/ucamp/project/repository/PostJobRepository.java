@@ -5,6 +5,7 @@ import com.ucamp.project.model.PostJob;
 import com.ucamp.project.model.PostJobId;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -18,6 +19,10 @@ public interface PostJobRepository extends JpaRepository<PostJob, PostJobId> {
     @Query("SELECT pj.postJobId.job.jobName FROM PostJob pj WHERE pj.postJobId.post.id = :postId")
     List<String> findByPostId(Long postId);
 
+    @Query("SELECT pj.postJobId.job.jobId FROM PostJob pj WHERE pj.postJobId.post.id = :postId")
+    List<Long> findByJobId(Long postId);
 
-
+    @Modifying
+    @Query("DELETE FROM PostJob pj WHERE pj.postJobId.post = :post")
+    void deleteAllByPost(@Param("post") Post post);
 }
