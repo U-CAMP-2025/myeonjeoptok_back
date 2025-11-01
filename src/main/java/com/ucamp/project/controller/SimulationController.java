@@ -9,8 +9,11 @@ import com.ucamp.project.service.PostService;
 import com.ucamp.project.service.SimulationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -47,7 +50,7 @@ public class SimulationController {
         return resp;
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id}/start")
     public ApiResponse<Object> getSimulation(@PathVariable Long id) {
         SimulationDetailResponse data = simulationService.findDetail(id);
         ApiResponse<Object> resp = ApiResponse.builder()
@@ -57,4 +60,36 @@ public class SimulationController {
                 .build();
         return resp;
     }
+
+    @PostMapping("/{simulationId}/answers/{qIdx}/audio")
+    public ApiResponse<Object> uploadAudio(
+            @PathVariable Long simulationId,
+            @PathVariable Long qIdx,
+            @RequestPart("file") MultipartFile file
+    ) {
+        long questionIndex = qIdx + 1;
+        System.out.println("[UPLOAD REQUEST RECEIVED]");
+        System.out.println("simulationId = " + simulationId);
+        System.out.println("qIdx = " + questionIndex);
+        System.out.println("file name = " + file.getOriginalFilename());
+        System.out.println("file size = " + file.getSize());
+        System.out.println("file content type = " + file.getContentType());
+
+        // MultipartFile 자체를 반환하면 직렬화 에러 -> 메타데이터만 반환
+        Map<String, Object> fileInfo = new HashMap<>();
+        fileInfo.put("simulationId", simulationId);
+        fileInfo.put("qIdx", questionIndex);
+        fileInfo.put("originalName", file.getOriginalFilename());
+        fileInfo.put("size", file.getSize());
+        fileInfo.put("contentType", file.getContentType());
+
+        ApiResponse<Object> resp = ApiResponse.builder()
+                .code(200)
+                .message("success")
+                .data(fileInfo)
+                .build();
+
+        return resp;
+    }
+
 }
