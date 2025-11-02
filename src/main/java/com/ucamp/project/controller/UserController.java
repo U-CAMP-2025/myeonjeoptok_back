@@ -1,5 +1,6 @@
 package com.ucamp.project.controller;
 
+import com.ucamp.project.auth.annotation.CurrentUser;
 import com.ucamp.project.dto.*;
 import com.ucamp.project.model.User;
 import com.ucamp.project.service.CertService;
@@ -58,30 +59,18 @@ public class UserController {
 
     // 마이페이지 요청
     @GetMapping("/mypage")
-    public ResponseEntity<UserDTO> myPage() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        // Principal 객체 - user 꺼내기
-        User user = (User) auth.getPrincipal();
-        log.info("유저정보: {}", user.toString());
-        // user에서 uid 꺼내기
-        Long uid = user.getUserId();
-        log.info("uid?: {}", uid);
-        return ResponseEntity.ok(userService.findUserByUserId(uid));
+    public ResponseEntity<UserDTO> myPage(@CurrentUser User user) {
+        return ResponseEntity.ok(userService.findUserByUserId(user.getUserId()));
     }
 
     // '합격자' 신청
     @PostMapping("/apply")
     public ResponseEntity<String> apply(
-            @RequestBody Map<String, String> body) {
-
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        User user = (User) auth.getPrincipal();
-
-        Long userId = user.getUserId();
+            @RequestBody Map<String, String> body, @CurrentUser User user) {
         String fileName = body.get("fileName");
         log.info("파일이름?(USerController): {}", fileName);
 
-        certService.createCertificate(userId, fileName);
+        certService.createCertificate(user.getUserId(), fileName);
         return ResponseEntity.ok("합격자 신청이 완료되었습니다.");
     }
 
