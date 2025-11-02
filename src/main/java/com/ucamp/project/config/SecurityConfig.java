@@ -29,12 +29,11 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/jobs/**", "/h2-console/**", "/api/notifications/**", "/image/**","/api/simulation/**","/api/interviewers/**").permitAll()
+                        .requestMatchers("/api/auth/**", "/api/jobs/**", "/h2-console/**", "/api/notifications/**", "/image/**","/api/simulation/**","/api/interviewers/**","/api/files/**", "/api/users/apply").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/posts/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/posts/**").authenticated()
                         .requestMatchers("/api/auth/**", "/api/jobs/**", "/h2-console/**", "/api/notifications/**").permitAll()
-                        .requestMatchers("/api/files/**").permitAll()
                         .requestMatchers("/image/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated())

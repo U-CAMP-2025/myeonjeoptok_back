@@ -79,6 +79,7 @@ public class UserController {
 
         Long userId = user.getUserId();
         String fileName = body.get("fileName");
+        log.info("파일이름?(USerController): {}", fileName);
 
         certService.createCertificate(userId, fileName);
         return ResponseEntity.ok("합격자 신청이 완료되었습니다.");
