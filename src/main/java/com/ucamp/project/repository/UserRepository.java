@@ -32,7 +32,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
             s.simulationCompletedAt,
             c.certStatus,
             c.certReqDate,
-            c.certTrmtDate
+            c.certTrmtDate,
+            c.certFileUrl
         )
         FROM User u
         LEFT JOIN u.job j

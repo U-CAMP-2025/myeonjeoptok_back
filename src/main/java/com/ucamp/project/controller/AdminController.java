@@ -36,7 +36,7 @@ public class AdminController {
     }
 
     // '합격자' 요청 처리
-    @PatchMapping("/pathPass")
+    @PutMapping("/pathPass")
     public CertDTO trmtCertReq(@RequestBody Map<String, String> request) {
         Long userId = Long.valueOf(request.get("userId"));
         String passStatus = request.get("passStatus");

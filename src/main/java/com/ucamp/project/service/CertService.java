@@ -7,20 +7,23 @@ import com.ucamp.project.repository.CertRepository;
 import com.ucamp.project.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CertService {
     private final CertRepository certRepository;
     private final UserRepository userRepository;
+    private final FileService fileService;
 
     // 유저 합격 처리
     @Transactional
     public CertDTO trmtCertReq(Long userId, String passStatus) {
-        // 1. User 조회 후 해당 유저의 passStatus 업데이트
+        // 1. User 조회
         User user = userRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("해당 유저 없음"));
 
@@ -48,5 +51,28 @@ public class CertService {
                 .certTrmtDate(cert.getCertTrmtDate())
                 .certStatus(cert.getCertStatus())
                 .build();
+    }
+
+    // 합격자 인증 생성
+    public void createCertificate(Long userId, String fileName) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("유저 없음: " + userId));
+
+        Certificate cert = Certificate.builder()
+                .user(user)
+                .certFileUrl("temp") // 이미지 접근 경로
+                .certStatus("PENDING")
+                .certReqDate(LocalDateTime.now())
+                .build();
+
+        certRepository.save(cert);
+
+        // ② 임시 파일명을 cert_id 기반 최종 파일명으로 변경
+        String finalUrl = fileService.renameTempToCertId("cert", fileName, cert.getCertId());
+
+        // ③ URL 업데이트 (프론트 <img src=...> 그대로 사용 가능)
+        cert.setCertFileUrl(finalUrl);
+        certRepository.save(cert);
+        log.info("Certificate 저장 완료: {}", cert.getCertId());
     }
 }
