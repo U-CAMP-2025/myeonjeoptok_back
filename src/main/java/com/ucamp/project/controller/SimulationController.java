@@ -4,13 +4,12 @@ import com.ucamp.project.dto.ApiResponse;
 import com.ucamp.project.dto.SimulationDetailResponse;
 import com.ucamp.project.model.Simulation;
 import com.ucamp.project.model.User;
-import com.ucamp.project.service.InterViewerService;
-import com.ucamp.project.service.PostService;
-import com.ucamp.project.service.SimulationService;
+import com.ucamp.project.service.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,6 +21,8 @@ public class SimulationController {
 
     private final PostService postService;
     private final SimulationService simulationService;
+    private final TempFileService  tempFileService;
+    private final SttService sttService;
 
     @GetMapping
     public ApiResponse<Object> getPost(){
@@ -68,28 +69,28 @@ public class SimulationController {
             @RequestPart("file") MultipartFile file
     ) {
         long questionIndex = qIdx + 1;
-        System.out.println("[UPLOAD REQUEST RECEIVED]");
-        System.out.println("simulationId = " + simulationId);
-        System.out.println("qIdx = " + questionIndex);
-        System.out.println("file name = " + file.getOriginalFilename());
-        System.out.println("file size = " + file.getSize());
-        System.out.println("file content type = " + file.getContentType());
 
-        // MultipartFile 자체를 반환하면 직렬화 에러 -> 메타데이터만 반환
-        Map<String, Object> fileInfo = new HashMap<>();
-        fileInfo.put("simulationId", simulationId);
-        fileInfo.put("qIdx", questionIndex);
-        fileInfo.put("originalName", file.getOriginalFilename());
-        fileInfo.put("size", file.getSize());
-        fileInfo.put("contentType", file.getContentType());
+        // 1) 임시 저장
+        Path saved = tempFileService.saveToTemp(file, "sim" + simulationId + "_q" + questionIndex);
 
-        ApiResponse<Object> resp = ApiResponse.builder()
+        // 2) STT 호출
+        String transcript = sttService.transcribe(saved);
+
+        // 3) 응답 (url은 필요시 파일 서버나 S3 업로드 후 세팅)
+        Map<String, Object> data = new HashMap<>();
+        data.put("simulationId", simulationId);
+        data.put("qIdx", questionIndex);
+        data.put("originalName", file.getOriginalFilename());
+        data.put("size", file.getSize());
+        data.put("contentType", file.getContentType());
+        data.put("transcript", transcript); // ★ 프론트로 전사 텍스트 전달
+
+        return ApiResponse.builder()
                 .code(200)
                 .message("success")
-                .data(fileInfo)
+                .data(data)
                 .build();
-
-        return resp;
     }
+
 
 }
