@@ -8,4 +8,5 @@ import lombok.Getter;
 public class SimulationDetailResponse {
     private InterviewerDto interviewer;
     private PostDto post;
+    private String simulationRandom;
 }
