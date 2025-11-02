@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
+import com.ucamp.project.util.CookieUtils;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -33,6 +34,9 @@ public class AuthController {
     @Value("${kakao.client-secret}") String clientSecret;
     @Value("${kakao.redirect-uri}")  String redirectUri;
     @Value("${client.origin:http://localhost:3000}") String clientOrigin;
+
+    @Value("${app.https:false}") boolean https; // 운영환경 true
+    @Value("${app.cookie-path:/}") String cookiePath;
 
     // 1. 인가 코드 요청
     @GetMapping("/kakao/login")
@@ -89,6 +93,9 @@ public class AuthController {
             u.setRefreshToken(rt);
             users.save(u);
 
+            var rtCookie = CookieUtils.refreshCookie(rt, https, cookiePath);
+
+
             String nickname = URLEncoder.encode(u.getNickname(), StandardCharsets.UTF_8);
             String profileImageUrl = u.getUsersProfileImageUrl() != null
                     ? URLEncoder.encode(u.getUsersProfileImageUrl(), StandardCharsets.UTF_8)
@@ -99,7 +106,10 @@ public class AuthController {
                     "%s/login/bridge?accessToken=%s&refreshToken=%s&nickname=%s&profileImageUrl=%s",
                     clientOrigin, at, rt, nickname, profileImageUrl
             );
-            return ResponseEntity.status(302).location(URI.create(redirectUrl)).build();
+            return ResponseEntity.status(302)
+                    .header("Set-Cookie", rtCookie.toString())
+                    .location(URI.create(redirectUrl))
+                    .build();
         }
 
         // 신규: 세션에 저장 후 /register 페이지로 리다이렉트
@@ -146,30 +156,40 @@ public class AuthController {
         // 세션 정리
         session.invalidate();
 
-        // 응답 데이터 구성
-        Map<String, Object> responseBody = Map.of(
-                "accessToken", accessToken,
-                "refreshToken", refreshToken,
-                "nickname", newUser.getNickname(),
-                "profileImageUrl", newUser.getUsersProfileImageUrl()
-        );
+        var rtCookie = CookieUtils.refreshCookie(refreshToken, https, cookiePath);
 
-        return ResponseEntity.ok(responseBody);
+        return ResponseEntity.ok()
+                .header("Set-Cookie", rtCookie.toString())
+                .body(Map.of(
+                        "accessToken", accessToken,
+                        "nickname", newUser.getNickname(),
+                        "profileImageUrl", newUser.getUsersProfileImageUrl()
+                ));
     }
 
     @PostMapping("/refresh")
-    public Map<String,String> refresh(@RequestBody Map<String,String> b){
-        String rt = b.get("refreshToken");
-        if (!jwt.valid(rt)) throw new IllegalArgumentException("Invalid refresh token");
+    public Map<String,String> refresh(@CookieValue(value = CookieUtils.RT_COOKIE, required = false) String rt){
+        System.out.println("-----------Token refresh");
+
+        if (rt == null || !jwt.valid(rt)) throw new IllegalArgumentException("Invalid refresh token");
+
         Long uid = jwt.uid(rt);
         User u = users.findById(uid).orElseThrow();
+
         if (!rt.equals(u.getRefreshToken())) throw new IllegalStateException("Refresh token mismatch");
 
         String at = jwt.access(uid);
         String newRt = jwt.refresh(uid);
+
         u.setRefreshToken(newRt);
         users.save(u);
-        return Map.of("accessToken", at, "refreshToken", newRt);
+
+        var rtCookie = CookieUtils.refreshCookie(newRt, https, cookiePath);
+
+        return ResponseEntity.ok()
+                .header("Set-Cookie", rtCookie.toString())
+                .body(Map.of("accessToken", at))
+                .getBody();
     }
 
     @GetMapping("/nickname/check")
@@ -186,7 +206,7 @@ public class AuthController {
                     "message", "닉네임을 입력하세요."
             ));
         }
-        System.out.println("닉네임: " + n);
+
         if (!n.matches("^[A-Za-z0-9가-힣_]{2,10}$")) {
             return ResponseEntity.badRequest().body(Map.of(
                     "available", false,
@@ -209,4 +229,13 @@ public class AuthController {
                 "normalized", n
         ));
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout() {
+        var clear = CookieUtils.clearRefreshCookie(https, cookiePath);
+        return ResponseEntity.noContent()
+                .header("Set-Cookie", clear.toString())
+                .build();
+    }
+
 }

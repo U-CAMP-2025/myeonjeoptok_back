@@ -31,8 +31,8 @@ kakao:
 
 jwt:
   secret: "${JWT_SECRET}"           # >= 32 chars
-  access-expiration: 3600000         # 1 hour (ms)
-  refresh-expiration: 1209600000     # 14 days (ms)akao/callback"
+  access-expiration: 3000         # 1 hour (ms) = 3600000
+  refresh-expiration: 1209600000     # 14 days (ms)akao/callback" = 1209600000
 
 client:
   origin: "${CLIENT_ORIGIN:http://localhost:3000}"
