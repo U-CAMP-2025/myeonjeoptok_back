@@ -25,4 +25,6 @@ public interface PostJobRepository extends JpaRepository<PostJob, PostJobId> {
     @Modifying
     @Query("DELETE FROM PostJob pj WHERE pj.postJobId.post = :post")
     void deleteAllByPost(@Param("post") Post post);
+
+    List<Long> findByPostJobIdPost(Post post);
 }

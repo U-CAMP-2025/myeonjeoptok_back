@@ -67,4 +67,14 @@ public class PostController {
 
         return ApiResponse.builder().code(200).message("success").data(postService.deletePost(user,postId)).build();
     }
+
+    @PostMapping("/{postId}")
+    public ApiResponse<?> copyPost(@PathVariable Long postId){
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        User user = (User)auth.getPrincipal();
+
+        Long copyPostId = postService.copyPost(postId, user);
+
+        return ApiResponse.builder().code(201).message("success").data(copyPostId).build();
+    }
 }

@@ -80,7 +80,8 @@ public class PostService {
         }
 
         //포스트 생성
-        Post post = Post.builder().postTitle(req.getTitle())
+        Post post = Post.builder()
+                .postTitle(req.getTitle())
                 .user(user)
                 .postDescription(req.getSummary())
                 .postStatus(req.getStatus())
@@ -275,49 +276,97 @@ public class PostService {
 
         Pageable pageable = PageRequest.of(page - 1, limit, sorted);
 
-        Page<Object[]> rawPage = postRepository.findPostsWithJoins(jobIds, pageable);
+        Page<Object[]> rawPage = null;
+
+        if (jobIds.isEmpty()) {
+            rawPage = postRepository.findPostsWithJoinsNotJobs(jobIds, pageable);
+        } else {
+            rawPage = postRepository.findPostsWithJoins(jobIds, pageable);
+        }
 
         List<PostResponseDTO> dtoList = rawPage.stream()
-                .map(obj -> PostResponseDTO.builder()
-                        .postId(((Number) obj[0]).longValue())
-                        .nickname((String) obj[1])
-                        .job(obj[2] != null && !((String)obj[2]).isEmpty()
-                                ? List.of(((String) obj[2]).split(","))
-                                : List.of())
-                        .title((String) obj[3])
-                        .description((String) obj[4])
-                        .bookCount(((Number) obj[5]).longValue())
-                        .review(((Number) obj[6]).intValue())
-                        .createAt(((java.sql.Timestamp) obj[7]).toLocalDateTime())
-                        .isPublic(((Number) obj[8]).intValue() == 1)
-                        .isPassed(((Number) obj[9]).intValue() == 1)
-                        .build())
+                .map(obj ->
+                        PostResponseDTO.builder()
+                                .postId(((Number) obj[0]).longValue())
+                                .nickname((String) obj[1])
+                                .job(obj[2] != null && !((String) obj[2]).isEmpty()
+                                        ? List.of(((String) obj[2]).split(","))
+                                        : List.of())
+                                .title((String) obj[3])
+                                .description((String) obj[4])
+                                .bookCount(((Number) obj[5]).longValue())
+                                .review(((Number) obj[6]).intValue())
+                                .createAt(((java.sql.Timestamp) obj[7]).toLocalDateTime())
+                                .isPublic(((Number) obj[8]).intValue() == 1)
+                                .isPassed(((Number) obj[9]).intValue() == 1)
+                                .build())
                 .toList();
 
-        // 정렬
-        Comparator<PostResponseDTO> comparator;
-        switch (col) {
-            case "review":
-                comparator = Comparator.comparingInt(PostResponseDTO::getReview);
-                break;
-            case "bookcount":
-                comparator = Comparator.comparingLong(PostResponseDTO::getBookCount);
-                break;
-            case "latest":
-            default:
-                comparator = Comparator.comparing(PostResponseDTO::getCreateAt);
-                break;
-        }
-        if ("desc".equalsIgnoreCase(dir)) {
-            comparator = comparator.reversed();
+        for (PostResponseDTO resp : dtoList) {
+            log.info("TEST : " + resp);
         }
 
-        List<PostResponseDTO> sortedList = dtoList.stream()
-                .sorted(comparator)
-                .toList();
 
         // Page 구현
-        return new PageImpl<>(sortedList, pageable, rawPage.getTotalElements());
+        return new PageImpl<>(dtoList, pageable, rawPage.getTotalElements());
     }
 
+    @Transactional
+    public Long copyPost(Long postId, User user) {
+        // 사용자가 작성한 질문셋 개수 체크
+        List<Post> postCount = postRepository.simulGetPost(user.getUserId());
+        if (postCount.size() == 10) {
+            throw new RuntimeException("질문셋은 최대 10개까지 생성됩니다.");
+        }
+
+        // 원본 Post 조회
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 질문셋입니다."));
+
+        post.setCount(post.getCount()+1);
+
+        // 원본 POST 복사
+        Post copiedPost = Post.builder()
+                .postTitle(post.getPostTitle())
+                .postDescription(post.getPostDescription())
+                .user(user)
+                .postOtherWriter(post.getUser())
+                .postStatus("N")
+                .build();
+
+        // POST 생성
+        Post postRecive = postRepository.save(copiedPost);
+
+        // JOB 복사
+        List<Long> jobs = postJobRepository.findByJobId(postId);
+
+        // JOB 생성
+        for (Long jobId : jobs) {
+
+            PostJobId job = PostJobId.builder()
+                    .post(postRecive)
+                    .job(jobRepository.findById(jobId).get())
+                    .build();
+            PostJob pJob = PostJob.builder().postJobId(job).build();
+            postJobRepository.save(pJob);
+        }
+
+        // QA 복사
+        List<Qa> copiedQas = new ArrayList<>();
+
+        for (Qa qa : post.getQaList()) {
+            Qa newQa = Qa.builder()
+                    .post(postRecive)
+                    .qaId(null)
+                    .qaQuestion(qa.getQaQuestion())
+                    .qaAnswer(qa.getQaAnswer())
+                    .qaOrder(qa.getQaOrder())
+                    .build();
+            copiedQas.add(newQa);
+        }
+
+        postRecive.setQaList(copiedQas);
+
+        return postRecive.getPostId();
+    }
 }
