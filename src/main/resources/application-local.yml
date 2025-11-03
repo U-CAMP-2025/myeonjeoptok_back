@@ -46,6 +46,10 @@ jwt:
 client:
   origin: "${CLIENT_ORIGIN:http://localhost:3000}"
 
+odcloud:
+  api:
+    key: e613c3b5927ddae9759cce4429a6d33a2916a46b3c3c80f38a8a4b34ac4f32c8
+
 openai:
   apiKey: ${OPENAI_API_KEY}   # 또는 평문 키(로컬 테스트용)
   baseUrl: https://api.openai.com/v1
