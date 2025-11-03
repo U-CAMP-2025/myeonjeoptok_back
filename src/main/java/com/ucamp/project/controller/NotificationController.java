@@ -10,6 +10,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -26,72 +27,73 @@ public class NotificationController {
     private final NotificationService notificationService;
 
     @GetMapping(value = "/sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter openSse(){
+    public SseEmitter openSse(@AuthenticationPrincipal User user){
+
+        log.info("TTEST " + user);
         // user에서 userId 추출
-//        Long userId = user.getUserId();
+        Long userId = user.getUserId();
 
         SseEmitter emitter = new SseEmitter(60 * 60 * 1000L);
 
-        sseComponent.addEmitter(1L, emitter);
-
         //콜백함수 등록
         emitter.onCompletion(() -> {
-            sseComponent.removeEmitter(1L);
+            sseComponent.removeEmitter(userId);
         });
 
         emitter.onTimeout(() -> {
-            sseComponent.removeEmitter(1L);
+            sseComponent.removeEmitter(userId);
         });
+
+        sseComponent.addEmitter(userId, emitter);
 
         try {
             emitter.send(SseEmitter.event()
                     .name("connect")
                     .data("connected"));
         } catch (IOException e) {
-            System.out.println("TESTETST!!!!");
-            throw new RuntimeException(e);
+            throw new RuntimeException("SSE 연결 실패");
         }
         return emitter;
     }
 
     @GetMapping
-    public ApiResponse<Object> findAll(){
+    public ApiResponse<Object> findAll(@AuthenticationPrincipal User user){
         ApiResponse<Object> resp = ApiResponse.builder()
                 .code(200)
                 .message("success")
-                .data(notificationService.findAll(1L))
+                .data(notificationService.findAll(user.getUserId()))
                 .build();
 
         return resp;
     }
 
     @PutMapping("/{notiId}")
-    public ResponseEntity<?> readOne(@PathVariable Long notiId){
-        notificationService.readOne(notiId,1L);
+    public ResponseEntity<?> readOne(@PathVariable Long notiId, @AuthenticationPrincipal User user){
+        notificationService.readOne(notiId,user.getUserId());
 
         return ResponseEntity.status(204).build();
     }
 
     @PutMapping
-    public ResponseEntity<?> readAll(){
+    public ResponseEntity<?> readAll(@AuthenticationPrincipal User user){
 
-        notificationService.readAll(1L);
+        notificationService.readAll(user.getUserId());
 
         return ResponseEntity.status(204).build();
     }
 
     @DeleteMapping("/{notiId}")
-    public ResponseEntity<?> deleteOne(@PathVariable Long notiId){
+    public ResponseEntity<?> deleteOne(@PathVariable Long notiId,@AuthenticationPrincipal User user){
 
-        notificationService.delOne(notiId,1L);
+        notificationService.delOne(notiId,user.getUserId());
 
         return ResponseEntity.status(204).build();
     }
 
     @DeleteMapping
-    public ResponseEntity<?> deleteAll(){
+    public ResponseEntity<?> deleteAll(@AuthenticationPrincipal User user){
 
-        notificationService.delAll(1L);
+        notificationService.delAll(user.getUserId());
 
         return ResponseEntity.status(204).build();
 

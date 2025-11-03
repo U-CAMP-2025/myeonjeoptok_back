@@ -2,16 +2,20 @@ package com.ucamp.project.service;
 
 import com.ucamp.project.dto.ReviewRequest;
 import com.ucamp.project.dto.ReviewResponse;
+import com.ucamp.project.model.Notification;
 import com.ucamp.project.model.Post;
 import com.ucamp.project.model.Review;
 import com.ucamp.project.model.User;
+import com.ucamp.project.repository.NotificationRepository;
 import com.ucamp.project.repository.PostRepository;
 import com.ucamp.project.repository.ReviewRepository;
 import com.ucamp.project.repository.UserRepository;
+import com.ucamp.project.sse.SseComponent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,8 +27,10 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final UserRepository userRepository;
     private final PostRepository postRepository;
+    private final SseComponent sseComponent;
+    private final NotificationRepository notificationRepository;
 
-    public List<ReviewResponse> findReviewsByPostId(Long postId){
+    public List<ReviewResponse> findReviewsByPostId(Long postId) {
         List<Review> reviewEntityList = reviewRepository.findByPost_PostId(postId);
 
         List<ReviewResponse> reviewDtoList = reviewEntityList.stream()
@@ -33,6 +39,7 @@ public class ReviewService {
         return reviewDtoList;
     }
 
+    @Transactional
     public ReviewResponse createReview(Long postId, Long userId, ReviewRequest request) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("포스트 찾을 수 없음 / id = " + postId));
@@ -48,6 +55,22 @@ public class ReviewService {
 
         Review reviewSaved = reviewRepository.save(newReview);
 
+        //자기자신 알람 방지
+        if(!userId.equals(post.getUser().getUserId())){
+            String message = post.getPostTitle()+":::"+postId;
+
+            Notification noti = Notification.builder()
+                    .notiId(null)
+                    .notiContent(message)
+                    .user(post.getUser())
+                    .notiType("REVIEW")
+                    .notiRead("N")
+                    .build();
+
+            notificationRepository.save(noti);
+
+            sseComponent.eventtrigger(post.getUser().getUserId());
+        }
         return ReviewResponse.fromEntity(reviewSaved);
     }
 

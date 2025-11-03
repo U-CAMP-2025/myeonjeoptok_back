@@ -2,13 +2,17 @@ package com.ucamp.project.service;
 
 import com.ucamp.project.dto.CertDTO;
 import com.ucamp.project.model.Certificate;
+import com.ucamp.project.model.Notification;
 import com.ucamp.project.model.User;
 import com.ucamp.project.repository.CertRepository;
+import com.ucamp.project.repository.NotificationRepository;
 import com.ucamp.project.repository.UserRepository;
+import com.ucamp.project.sse.SseComponent;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.LocalDateTime;
 
@@ -19,6 +23,8 @@ public class CertService {
     private final CertRepository certRepository;
     private final UserRepository userRepository;
     private final FileService fileService;
+    private final SseComponent sseComponent;
+    private final NotificationRepository notificationRepository;
 
     // 유저 합격 처리
     @Transactional
@@ -44,6 +50,20 @@ public class CertService {
         // 3. Certificate 업데이트
         cert.setCertStatus(passStatus);
         cert.setCertTrmtDate(LocalDateTime.now());
+
+        String message = "합격자 인증이 수락되었습니다.";
+
+        Notification noti = Notification.builder()
+                .notiId(null)
+                .notiContent(message)
+                .user(user)
+                .notiType("CERTIFICATE")
+                .notiRead("N")
+                .build();
+
+        notificationRepository.save(noti);
+
+        sseComponent.eventtrigger(userId);
 
         // 4. Response 생성
         return CertDTO.builder()
