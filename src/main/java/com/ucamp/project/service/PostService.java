@@ -306,7 +306,6 @@ public class PostService {
             log.info("TEST : " + resp);
         }
 
-
         // Page 구현
         return new PageImpl<>(dtoList, pageable, rawPage.getTotalElements());
     }
@@ -364,7 +363,7 @@ public class PostService {
                     .build();
             copiedQas.add(newQa);
         }
-
+        // QA 생성
         postRecive.setQaList(copiedQas);
 
         return postRecive.getPostId();
