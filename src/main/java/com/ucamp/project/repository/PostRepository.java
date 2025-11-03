@@ -24,7 +24,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                     SELECT 
                         p.post_id AS postId,
                         u.nickname AS nickname,
-                        LISTAGG(j.job_name, ',') WITHIN GROUP (ORDER BY j.job_name) AS job,
+                        LISTAGG(DISTINCT j.job_name, ',') WITHIN GROUP (ORDER BY j.job_name) AS job,
                         p.post_title AS title,
                         p.post_description AS description,
                         p.post_import_count AS bookCount,
@@ -68,7 +68,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                     SELECT 
                         p.post_id AS postId,
                         u.nickname AS nickname,
-                        LISTAGG(j.job_name, ',') WITHIN GROUP (ORDER BY j.job_name) AS job,
+                        LISTAGG(DISTINCT j.job_name, ',') WITHIN GROUP (ORDER BY j.job_name) AS job,
                         p.post_title AS title,
                         p.post_description AS description,
                         p.post_import_count AS bookCount,
