@@ -43,6 +43,8 @@ jwt:
   access-expiration: 3600000         # 1 hour (ms)
   refresh-expiration: 1209600000     # 14 days (ms)
 
+client:
+  origin: "${CLIENT_ORIGIN:http://localhost:3000}"
 
 openai:
   apiKey: ${OPENAI_API_KEY}   # 또는 평문 키(로컬 테스트용)
