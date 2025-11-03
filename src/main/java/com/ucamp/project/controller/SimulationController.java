@@ -6,6 +6,7 @@ import com.ucamp.project.model.Simulation;
 import com.ucamp.project.model.User;
 import com.ucamp.project.service.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,22 +26,39 @@ public class SimulationController {
     private final SttService sttService;
 
     @GetMapping
-    public ApiResponse<Object> getPost(){
+    public ApiResponse<Object> getPost(@AuthenticationPrincipal User user){
+        // 비로그인 사용자 요청 예외
+        if (user == null) {
+            return ApiResponse.builder()
+                    .code(401)
+                    .message("로그인이 필요합니다.")
+                    .build();
+        }
+
         ApiResponse<Object> resp = ApiResponse.builder()
                 .code(200)
                 .message("success")
-                .data(postService.simulGetPost(101l))
+                .data(postService.simulGetPost(user.getUserId()))
                 .build();
         return resp;
     }
 
     @PostMapping
-    public ApiResponse<Object> createPost(@RequestBody Simulation simulation){
+    public ApiResponse<Object> createPost(@RequestBody Simulation simulation, @AuthenticationPrincipal User user){
+        // 비로그인 사용자 요청 예외
+        if (user == null) {
+            return ApiResponse.builder()
+                    .code(401)
+                    .message("로그인이 필요합니다.")
+                    .build();
+        }
+
         System.out.println("TEST : " + simulation.getPostId());
         System.out.println("TEST : " + simulation.getSimulationRandom());
         System.out.println("TEST : " + simulation.getInterviewerId());
-        simulation.setUser(new User());
-        simulation.getUser().setUserId(101l);
+        simulation.setUser(user);
+//        simulation.setUser(new User());
+//        simulation.getUser().setUserId(101l);
 
 
         ApiResponse<Object> resp = ApiResponse.builder()
