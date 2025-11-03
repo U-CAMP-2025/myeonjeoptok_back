@@ -28,10 +28,11 @@ kakao:
   client-id: "${KAKAO_CLIENT_ID}"
   client-secret: "${KAKAO_CLIENT_SECRET}"
   redirect-uri: "${KAKAO_REDIRECT_URI}"
+  admin-key: "${KAKAO_ADMIN_KEY}"
 
 jwt:
   secret: "${JWT_SECRET}"           # >= 32 chars
-  access-expiration: 3000         # 1 hour (ms) = 3600000
+  access-expiration: 3600000         # 1 hour (ms) = 3600000
   refresh-expiration: 1209600000     # 14 days (ms)akao/callback" = 1209600000
 
 client:

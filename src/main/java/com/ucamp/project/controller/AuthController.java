@@ -34,6 +34,7 @@ public class AuthController {
     @Value("${kakao.client-secret}") String clientSecret;
     @Value("${kakao.redirect-uri}")  String redirectUri;
     @Value("${client.origin:http://localhost:3000}") String clientOrigin;
+    @Value("${kakao.admin-key:}") String adminKey;
 
     @Value("${app.https:false}") boolean https; // 운영환경 true
     @Value("${app.cookie-path:/}") String cookiePath;
@@ -178,18 +179,10 @@ public class AuthController {
 
         if (!rt.equals(u.getRefreshToken())) throw new IllegalStateException("Refresh token mismatch");
 
+        // EASIEST HOTFIX: do not rotate refresh token here to avoid race-induced mismatches.
+        // Just mint a new access token and return it. Keep the existing refresh token as-is.
         String at = jwt.access(uid);
-        String newRt = jwt.refresh(uid);
-
-        u.setRefreshToken(newRt);
-        users.save(u);
-
-        var rtCookie = CookieUtils.refreshCookie(newRt, https, cookiePath);
-
-        return ResponseEntity.ok()
-                .header("Set-Cookie", rtCookie.toString())
-                .body(Map.of("accessToken", at))
-                .getBody();
+        return Map.of("accessToken", at);
     }
 
     @GetMapping("/nickname/check")
@@ -230,12 +223,119 @@ public class AuthController {
         ));
     }
 
-    @PostMapping("/logout")
-    public ResponseEntity<Void> logout() {
+    @GetMapping("/logout")
+    public ResponseEntity<Void> logout(@RequestHeader(value = "Authorization", required = false) String authorization) {
+        // 1) 우리 서비스의 refreshToken 쿠키 제거
         var clear = CookieUtils.clearRefreshCookie(https, cookiePath);
-        return ResponseEntity.noContent()
+
+        // 2) 우리 DB의 refreshToken 무효화 및 Kakao 사용자 로그아웃 (best-effort)
+        try {
+            String bearer = (authorization != null && authorization.startsWith("Bearer ")) ? authorization.substring(7) : null;
+            if (bearer != null && jwt.valid(bearer)) {
+                Long uid = jwt.uid(bearer);
+                users.findById(uid).ifPresent(u -> {
+                    // DB 저장 리프레시 토큰 제거
+                    u.setRefreshToken(null);
+                    users.save(u);
+
+                    // Kakao Admin Key가 설정된 경우 카카오 토큰 무효화 호출
+                    if (u.getKakaoId() != null && adminKey != null && !adminKey.isBlank()) {
+                        try {
+                            WebClient.create()
+                                    .post()
+                                    .uri("https://kapi.kakao.com/v1/user/logout")
+                                    .header("Authorization", "KakaoAK " + adminKey)
+                                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                                    .body(BodyInserters.fromFormData("target_id_type", "user_id")
+                                            .with("target_id", u.getKakaoId()))
+                                    .retrieve()
+                                    .bodyToMono(Map.class)
+                                    .onErrorResume(e -> reactor.core.publisher.Mono.empty())
+                                    .block();
+                        } catch (Exception ignore) {
+                            // swallow errors
+                        }
+                    }
+                });
+            }
+        } catch (Exception ignore) {
+            // swallow errors
+        }
+
+        // 3) 브라우저 카카오 계정 세션까지 종료하도록 카카오 로그아웃으로 302 리다이렉트
+        String url = UriComponentsBuilder.fromHttpUrl("https://kauth.kakao.com/oauth/logout")
+                .queryParam("client_id", clientId)
+                .queryParam("logout_redirect_uri", clientOrigin + "/logout/complete")
+                .build(true).toUriString();
+
+        return ResponseEntity.status(302)
                 .header("Set-Cookie", clear.toString())
+                .location(URI.create(url))
                 .build();
     }
 
+
+    @DeleteMapping("/withdraw")
+    public ResponseEntity<Map<String, Object>> withdraw(
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        // 액세스 토큰 확인
+        String bearer = (authorization != null && authorization.startsWith("Bearer "))
+                ? authorization.substring(7) : null;
+        if (bearer == null || !jwt.valid(bearer)) {
+            return ResponseEntity.status(401).body(Map.of(
+                    "success", false,
+                    "message", "Invalid or missing access token"
+            ));
+        }
+
+        Long uid = jwt.uid(bearer);
+        User u = users.findById(uid).orElse(null);
+        if (u == null) {
+            return ResponseEntity.status(404).body(Map.of(
+                    "success", false,
+                    "message", "User not found"
+            ));
+        }
+
+        // 소프트 삭제: STATUS 마킹 + 민감정보 비활성화 + 리프레시 토큰 무효화
+        u.setStatus("DELETED");
+        u.setRefreshToken(null);
+        // 닉네임/이메일은 유니크 제약이 있어 새 사용자에게 재사용할 수 있도록 변경
+        // (필요시 프론트에서 표시용으로는 가려쓰도록)
+        String suffix = "_" + uid;
+        if (u.getNickname() != null) {
+            u.setNickname("deleted" + suffix);
+        }
+        if (u.getEmail() != null) {
+            u.setEmail("deleted" + suffix + "@example.invalid");
+        }
+        users.save(u);
+
+        // 3) 클라이언트 쿠키에서 refresh 토큰 제거
+        var clear = CookieUtils.clearRefreshCookie(https, cookiePath);
+
+        // 4) (선택) 카카오 서버-사이드 로그아웃: 가입 해제는 아니지만, 현재 세션 무효화 목적
+        try {
+            if (u.getKakaoId() != null && adminKey != null && !adminKey.isBlank()) {
+                WebClient.create()
+                        .post()
+                        .uri("https://kapi.kakao.com/v1/user/logout")
+                        .header("Authorization", "KakaoAK " + adminKey)
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .body(BodyInserters.fromFormData("target_id_type", "user_id")
+                                .with("target_id", u.getKakaoId()))
+                        .retrieve()
+                        .bodyToMono(Map.class)
+                        .onErrorResume(e -> reactor.core.publisher.Mono.empty())
+                        .block();
+            }
+        } catch (Exception ignore) {}
+
+        return ResponseEntity.ok()
+                .header("Set-Cookie", clear.toString())
+                .body(Map.of(
+                        "success", true,
+                        "message", "Account has been withdrawn"
+                ));
+    }
 }
