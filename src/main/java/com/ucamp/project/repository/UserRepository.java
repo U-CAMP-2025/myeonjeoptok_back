@@ -32,7 +32,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
             s.simulationCompletedAt,
             c.certStatus,
             c.certReqDate,
-            c.certTrmtDate
+            c.certTrmtDate,
+            c.certFileUrl
         )
         FROM User u
         LEFT JOIN u.job j
@@ -92,4 +93,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
             ) s2 ON s1.simulation_id = s2.simulation_id
         """, nativeQuery = true)
     List<UserWithSimulDTO> findAllTranscriptionStatus();
+    boolean existsByNicknameIgnoreCase(String nickname);
+    Optional<User> findByNicknameIgnoreCase(String nickname);
 }

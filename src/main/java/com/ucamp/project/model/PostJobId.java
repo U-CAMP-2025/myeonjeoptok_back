@@ -2,6 +2,7 @@ package com.ucamp.project.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
@@ -11,6 +12,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode
+@Builder
 public class PostJobId implements Serializable {
     @ManyToOne
     @JoinColumn(name = "post_id",nullable = false)

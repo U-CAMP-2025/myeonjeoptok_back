@@ -74,9 +74,12 @@ public class Post {
         if (this.user == null && this.userId != null) {
             this.user = User.builder().userId(userId).build();
         }
-        if (this.postOtherWriter == null && this.postOtherWriterId != null) {
-            this.postOtherWriter = User.builder().userId(postOtherWriterId).build();
+        if (this.count == null){
+            this.count = 0l;
         }
+//        if (this.postOtherWriter == null && this.postOtherWriterId != null) {
+//            this.postOtherWriter = User.builder().userId(postOtherWriterId).build();
+//        }
         if (this.postCreatedAt == null) {
             this.postCreatedAt = LocalDateTime.now();
         }
