@@ -1,6 +1,5 @@
 package com.ucamp.project.controller;
 
-import com.ucamp.project.auth.annotation.CurrentUser;
 import com.ucamp.project.dto.ApiResponse;
 import com.ucamp.project.model.User;
 import com.ucamp.project.service.NotificationService;
@@ -27,21 +26,21 @@ public class NotificationController {
     private final NotificationService notificationService;
 
     @GetMapping(value = "/sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter openSse(@CurrentUser User user){
+    public SseEmitter openSse(){
         // user에서 userId 추출
-        Long userId = user.getUserId();
+//        Long userId = user.getUserId();
 
         SseEmitter emitter = new SseEmitter(60 * 60 * 1000L);
 
-        sseComponent.addEmitter(userId, emitter);
+        sseComponent.addEmitter(1L, emitter);
 
         //콜백함수 등록
         emitter.onCompletion(() -> {
-            sseComponent.removeEmitter(userId);
+            sseComponent.removeEmitter(1L);
         });
 
         emitter.onTimeout(() -> {
-            sseComponent.removeEmitter(userId);
+            sseComponent.removeEmitter(1L);
         });
 
         try {
@@ -56,43 +55,43 @@ public class NotificationController {
     }
 
     @GetMapping
-    public ApiResponse<Object> findAll(@CurrentUser User user){
+    public ApiResponse<Object> findAll(){
         ApiResponse<Object> resp = ApiResponse.builder()
                 .code(200)
                 .message("success")
-                .data(notificationService.findAll(user.getUserId()))
+                .data(notificationService.findAll(1L))
                 .build();
 
         return resp;
     }
 
     @PutMapping("/{notiId}")
-    public ResponseEntity<?> readOne(@PathVariable Long notiId, @CurrentUser User user){
-        notificationService.readOne(notiId,user.getUserId());
+    public ResponseEntity<?> readOne(@PathVariable Long notiId){
+        notificationService.readOne(notiId,1L);
 
         return ResponseEntity.status(204).build();
     }
 
     @PutMapping
-    public ResponseEntity<?> readAll(@CurrentUser User user){
+    public ResponseEntity<?> readAll(){
 
-        notificationService.readAll(user.getUserId());
+        notificationService.readAll(1L);
 
         return ResponseEntity.status(204).build();
     }
 
     @DeleteMapping("/{notiId}")
-    public ResponseEntity<?> deleteOne(@PathVariable Long notiId, @CurrentUser User user){
+    public ResponseEntity<?> deleteOne(@PathVariable Long notiId){
 
-        notificationService.delOne(notiId, user.getUserId());
+        notificationService.delOne(notiId,1L);
 
         return ResponseEntity.status(204).build();
     }
 
     @DeleteMapping
-    public ResponseEntity<?> deleteAll(@CurrentUser User user){
+    public ResponseEntity<?> deleteAll(){
 
-        notificationService.delAll(user.getUserId());
+        notificationService.delAll(1L);
 
         return ResponseEntity.status(204).build();
 
