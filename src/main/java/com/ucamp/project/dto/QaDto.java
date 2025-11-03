@@ -10,4 +10,5 @@ public class QaDto {
     private Long qaOrder;
     private String qaQuestion;
     private String qaAnswer;
+    private String transContent;
 }

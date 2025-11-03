@@ -2,7 +2,9 @@ package com.ucamp.project.controller;
 
 import com.ucamp.project.dto.ApiResponse;
 import com.ucamp.project.dto.SimulationDetailResponse;
+import com.ucamp.project.dto.SimulationResultDto;
 import com.ucamp.project.model.Simulation;
+import com.ucamp.project.model.Transcription;
 import com.ucamp.project.model.User;
 import com.ucamp.project.service.*;
 import lombok.RequiredArgsConstructor;
@@ -22,11 +24,13 @@ public class SimulationController {
 
     private final PostService postService;
     private final SimulationService simulationService;
-    private final TempFileService  tempFileService;
+    private final TempFileService tempFileService;
     private final SttService sttService;
-
+    private final SimulationQueryService simulationQueryService;
+    private final SimulationRecordService simulationRecordService;
+    private final TranscriptionService transcriptionService;
     @GetMapping
-    public ApiResponse<Object> getPost(@AuthenticationPrincipal User user){
+    public ApiResponse<Object> getPost(@AuthenticationPrincipal User user) {
         // 비로그인 사용자 요청 예외
         if (user == null) {
             return ApiResponse.builder()
@@ -44,7 +48,7 @@ public class SimulationController {
     }
 
     @PostMapping
-    public ApiResponse<Object> createPost(@RequestBody Simulation simulation, @AuthenticationPrincipal User user){
+    public ApiResponse<Object> createPost(@RequestBody Simulation simulation, @AuthenticationPrincipal User user) {
         // 비로그인 사용자 요청 예외
         if (user == null) {
             return ApiResponse.builder()
@@ -80,24 +84,24 @@ public class SimulationController {
         return resp;
     }
 
-    @PostMapping("/{simulationId}/answers/{qIdx}/audio")
+    @PostMapping("/{simulationId}/answers/{qaId}/audio")
     public ApiResponse<Object> uploadAudio(
             @PathVariable Long simulationId,
-            @PathVariable Long qIdx,
+            @PathVariable Long qaId,
             @RequestPart("file") MultipartFile file
     ) {
-        long questionIndex = qIdx + 1;
-
         // 1) 임시 저장
-        Path saved = tempFileService.saveToTemp(file, "sim" + simulationId + "_q" + questionIndex);
+        Path saved = tempFileService.saveToTemp(file, "sim" + simulationId + "_q" + qaId);
 
         // 2) STT 호출
         String transcript = sttService.transcribe(saved);
 
+        Transcription savedTr = transcriptionService.upsert(simulationId, qaId, transcript);
+
         // 3) 응답 (url은 필요시 파일 서버나 S3 업로드 후 세팅)
         Map<String, Object> data = new HashMap<>();
         data.put("simulationId", simulationId);
-        data.put("qIdx", questionIndex);
+        data.put("qaId", qaId);
         data.put("originalName", file.getOriginalFilename());
         data.put("size", file.getSize());
         data.put("contentType", file.getContentType());
@@ -110,5 +114,34 @@ public class SimulationController {
                 .build();
     }
 
+    @GetMapping("/{simulationId}/result")
+    public ApiResponse<Object> getResult(@PathVariable Long simulationId,
+                                         @AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ApiResponse.builder().code(401).message("로그인이 필요합니다.").build();
+        }
+        // 본인 소유 검증
+        simulationService.ensureOwner(simulationId, user.getUserId());
+
+        var dto = simulationQueryService.buildResult(simulationId); // PostDto + QaDto(transContent 포함)
+        return ApiResponse.builder()
+                .code(200)
+                .message("success")
+                .data(dto)
+                .build();
+    }
+
+    @GetMapping("/records")
+    public ApiResponse<Object> getMySimulationRecords(@AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ApiResponse.builder().code(401).message("로그인이 필요합니다.").build();
+        }
+        var items = simulationRecordService.listMyRecords(user.getUserId());
+        return ApiResponse.builder()
+                .code(200)
+                .message("success")
+                .data(items)
+                .build();
+    }
 
 }

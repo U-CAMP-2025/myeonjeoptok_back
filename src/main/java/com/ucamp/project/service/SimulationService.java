@@ -29,7 +29,14 @@ public class SimulationService {
         return simulationRepository.save(simulation);
     }
     public Simulation findById(Long id) {return  simulationRepository.findById(id).get();}
+    public void ensureOwner(Long simulationId, Long userId) {
+        Simulation simulation = simulationRepository.findById(simulationId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 시뮬레이션입니다."));
 
+        if (!simulation.getUser().getUserId().equals(userId)) {
+            throw new SecurityException("본인의 시뮬레이션이 아닙니다.");
+        }
+    }
 
     public SimulationDetailResponse findDetail(Long simulationId) {
         Simulation sim = simulationRepository.findBySimulationId(simulationId)
@@ -68,4 +75,7 @@ public class SimulationService {
     }
 
 
+    public List<Simulation> findByUserId(Long userId) {
+        return simulationRepository.findByUser_UserIdOrderBySimulationIdDesc(userId);
+    }
 }
