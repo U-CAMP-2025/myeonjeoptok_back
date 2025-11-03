@@ -131,7 +131,7 @@ public class AuthController {
         String email = (String) session.getAttribute("P_EMAIL");
         String profileImage = (String) session.getAttribute("P_PROFILE");
 
-        if (kakaoId == null || email == null) {
+        if (kakaoId == null) {
             // 카카오 세션이 만료된 경우 400 에러 응답
             return ResponseEntity.badRequest().body(Map.of("error", "카카오 세션이 만료되었습니다."));
         }
