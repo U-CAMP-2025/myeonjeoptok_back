@@ -27,6 +27,12 @@ public class UserController {
     private final UserService userService;
     private final CertService certService;
 
+    private Long getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        User user = (User) auth.getPrincipal();
+        return user.getUserId();
+    }
+
     @GetMapping("/all")
     public List<UserResponse> getAll() {
         log.info("ㅁㄴㅇㄹㅇㅁㄴㄹ");
@@ -59,7 +65,7 @@ public class UserController {
     // 마이페이지 요청
     @GetMapping("/mypage")
     public ResponseEntity<UserDTO> myPage() {
-        return ResponseEntity.ok(userService.findUserByUserId(1L));
+        return ResponseEntity.ok(userService.findUserByUserId(getCurrentUserId()));
     }
 
     // '합격자' 신청
@@ -69,7 +75,7 @@ public class UserController {
         String fileName = body.get("fileName");
         log.info("파일이름?(USerController): {}", fileName);
 
-        certService.createCertificate(1L, fileName);
+        certService.createCertificate(getCurrentUserId(), fileName);
         return ResponseEntity.ok("합격자 신청이 완료되었습니다.");
     }
 
