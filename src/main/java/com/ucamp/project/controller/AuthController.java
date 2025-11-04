@@ -101,12 +101,14 @@ public class AuthController {
             String profileImageUrl = u.getUsersProfileImageUrl() != null
                     ? URLEncoder.encode(u.getUsersProfileImageUrl(), StandardCharsets.UTF_8)
                     : "";
-
+            // 로그인 후 다음으로 이동하고싶은 페이지 지정
+            String nextPage = "/myqa";
             // 기존 유저: 프론트 홈으로 토큰 전달 리다이렉트
             String redirectUrl = String.format(
-                    "%s/login/bridge?accessToken=%s&refreshToken=%s&nickname=%s&profileImageUrl=%s",
-                    clientOrigin, at, rt, nickname, profileImageUrl
+                    "%s/login/bridge?accessToken=%s&refreshToken=%s&nickname=%s&profileImageUrl=%s&next=%s",
+                    clientOrigin, at, rt, nickname, profileImageUrl, URLEncoder.encode(nextPage, StandardCharsets.UTF_8)
             );
+
             return ResponseEntity.status(302)
                     .header("Set-Cookie", rtCookie.toString())
                     .location(URI.create(redirectUrl))
