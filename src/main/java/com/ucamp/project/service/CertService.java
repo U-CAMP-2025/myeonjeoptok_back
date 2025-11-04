@@ -33,10 +33,13 @@ public class CertService {
         User user = userRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("해당 유저 없음"));
 
+        log.info("유저정보?: {}",user.toString());
+
 
         // 1. Certificate 조회 (최신 요청 기준)
-        Certificate cert = certRepository.findByUserUserId(userId)
+        Certificate cert = certRepository.findTopByUserUserIdOrderByCertReqDateDesc(userId)
                 .orElseThrow(() -> new RuntimeException("해당 유저의 신청 정보 없음"));
+        log.info("certificate?: {}", cert.toString());
 
         // 2. User.passStatus 업데이트
         if ("APPROVED".equalsIgnoreCase(passStatus)) {
@@ -57,7 +60,7 @@ public class CertService {
                 .notiId(null)
                 .notiContent(message)
                 .user(user)
-                .notiType("CERTIFICATE")
+                .notiType("CERT")
                 .notiRead("N")
                 .build();
 
