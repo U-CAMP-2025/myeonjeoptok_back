@@ -43,4 +43,7 @@ public interface SimulationRepository extends JpaRepository<Simulation, Long> {
                                    @Param("postId") Long postId);
 
 
+    void deleteByPost(Post post);
+
+    List<Simulation> findByPost(Post post);
 }
