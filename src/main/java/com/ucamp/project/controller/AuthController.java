@@ -114,13 +114,12 @@ public class AuthController {
             String profileImageUrl = u.getUsersProfileImageUrl() != null
                     ? URLEncoder.encode(u.getUsersProfileImageUrl(), StandardCharsets.UTF_8)
                     : "";
-            String role = u.getRole();
             // 로그인 후 다음으로 이동하고싶은 페이지 지정
             String nextPage = "/myqa";
             // 기존 유저: 프론트 홈으로 토큰 전달 리다이렉트
             String redirectUrl = String.format(
-                    "%s/login/bridge?accessToken=%s&refreshToken=%s&nickname=%s&profileImageUrl=%s&role=%s&next=%s",
-                    clientOrigin, at, rt, nickname, profileImageUrl, role, URLEncoder.encode(nextPage, StandardCharsets.UTF_8)
+                    "%s/login/bridge?accessToken=%s&refreshToken=%s&nickname=%s&profileImageUrl=%s&next=%s",
+                    clientOrigin, at, rt, nickname, profileImageUrl, URLEncoder.encode(nextPage, StandardCharsets.UTF_8)
             );
 
             return ResponseEntity.status(302)
@@ -196,8 +195,7 @@ public class AuthController {
                 .body(Map.of(
                         "accessToken", accessToken,
                         "nickname", u.getNickname(),
-                        "profileImageUrl", u.getUsersProfileImageUrl(),
-                        "role", u.getRole()
+                        "profileImageUrl", u.getUsersProfileImageUrl()
                 ));
     }
 
