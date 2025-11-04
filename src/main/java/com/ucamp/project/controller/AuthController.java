@@ -89,8 +89,8 @@ public class AuthController {
         Optional<User> found = users.findByKakaoId(kakaoId);
         if (found.isPresent()) {
             User u = found.get();
-            String at = jwt.access(u.getUserId());
-            String rt = jwt.refresh(u.getUserId());
+            String at = jwt.access(u);
+            String rt = jwt.refresh(u);
             u.setRefreshToken(rt);
             users.save(u);
 
@@ -149,11 +149,11 @@ public class AuthController {
                 .role("USER")
                 .createdAt(LocalDateTime.now())
                 .build();
-        users.save(newUser);
+        User u = users.save(newUser);
 
         // 토큰 발급
-        String accessToken = jwt.access(newUser.getUserId());
-        String refreshToken = jwt.refresh(newUser.getUserId());
+        String accessToken = jwt.access(u);
+        String refreshToken = jwt.refresh(u);
         newUser.setRefreshToken(refreshToken);
         users.save(newUser);
         // 세션 정리
@@ -183,7 +183,7 @@ public class AuthController {
 
         // EASIEST HOTFIX: do not rotate refresh token here to avoid race-induced mismatches.
         // Just mint a new access token and return it. Keep the existing refresh token as-is.
-        String at = jwt.access(uid);
+        String at = jwt.access(u);
         return Map.of("accessToken", at);
     }
 
