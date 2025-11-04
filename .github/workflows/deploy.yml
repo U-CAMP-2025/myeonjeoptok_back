@@ -11,7 +11,7 @@ jobs:
       packages: write
 
     env:
-      IMAGE: ghcr.io/${{ github.repository_owner }}/ucamp_project_server:latest
+      IMAGE: ghcr.io/${{ github.repository_owner.toLowerCase() }}/ucamp_project_server:latest
 
     steps:
       - name: Checkout
