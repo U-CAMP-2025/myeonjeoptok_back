@@ -164,4 +164,17 @@ public class SimulationController {
                 .build();
     }
 
+    @PatchMapping("/{simulationId}/{qaCount}")
+    public ApiResponse<?> stopSimulation(@PathVariable Long simulationId, @PathVariable Long qaCount){
+
+        simulationService.end(simulationId,qaCount);
+
+        return ApiResponse.builder()
+                .code(200)
+                .message("success")
+                .data("ok")
+                .build();
+
+    }
+
 }
