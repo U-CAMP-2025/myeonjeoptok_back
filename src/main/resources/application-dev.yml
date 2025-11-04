@@ -1,0 +1,73 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  datasource:
+    url: jdbc:h2:mem:ucamp;MODE=Oracle;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+    defer-datasource-initialization: true
+
+server:
+  port: 8080
+
+# Kakao OAuth settings (must exactly match Kakao Dev Console)
+kakao:
+  client-id: "${KAKAO_CLIENT_ID}"
+  client-secret: "${KAKAO_CLIENT_SECRET}"
+  redirect-uri: "${KAKAO_REDIRECT_URI}"
+  admin-key: "${KAKAO_ADMIN_KEY}"
+
+jwt:
+  secret: "${JWT_SECRET}"           # >= 32 chars
+  access-expiration: 3600000         # 1 hour (ms) = 3600000
+  refresh-expiration: 1209600000     # 14 days (ms)akao/callback" = 1209600000
+
+client:
+  origin: "${CLIENT_ORIGIN:http://localhost:3000}"
+
+openai:
+  apiKey: ${OPENAI_API_KEY}   # 또는 평문 키(로컬 테스트용)
+  baseUrl: https://api.openai.com/v1
+
+  sttModel: gpt-4o-mini-transcribe
+  sttPrompt: >
+    이 음성은 IT 직무 면접 또는 기술 인터뷰 맥락의 녹음입니다.
+    면접 대상자는 아래 직무 중 하나에 지원하고 있으며,
+    기술적, 조직적, 또는 업무 프로세스 관련 용어를 사용할 수 있습니다.
+    IT 전문용어, 약어, 영어 단어, 고유명사는 그대로 인식해 주세요.
+    
+    직무 예시:
+    소프트웨어 엔지니어, 인사 전문가, 프론트엔드 개발자, 백엔드 개발자,
+    풀스택 개발자, 데이터베이스 관리자, 데이터 과학자, DevOps 엔지니어,
+    UI/UX 디자이너, QA 엔지니어, 모바일 앱 개발자, 클라우드 엔지니어,
+    기계 학습 엔지니어, 보안 분석가, 네트워크 엔지니어, 시스템 관리자,
+    비즈니스 분석가, 프로덕트 매니저, 스크럼 마스터, 기술 문서 작성자.
+    
+    주요 기술 용어 및 약어:
+    Spring Boot, JPA, Hibernate, REST API, GraphQL, JWT, OAuth2,
+    Docker, Kubernetes, Jenkins, GitHub Actions, CI/CD, AWS, GCP, Azure,
+    Redis, Kafka, RabbitMQ, MySQL, PostgreSQL, Oracle, MongoDB,
+    TensorFlow, PyTorch, Scikit-learn, Pandas, NumPy,
+    HTML, CSS, JavaScript, React, Vue, TypeScript, Node.js,
+    Figma, Adobe XD, UI, UX, Accessibility, Wireframe, Prototype,
+    TCP/IP, DNS, VPN, Load Balancer, Firewall,
+    Test Automation, Selenium, JUnit, TDD, QA,
+    Agile, Scrum, Sprint, Backlog, Retrospective,
+    Performance, Scaling, Logging, Monitoring, Observability.
+    
+    언어는 한국어와 영어가 혼용될 수 있습니다.
+    영어 발음이나 약어를 한글로 말한 경우도 원어로 복원해 주세요.
+    예: 도커 → Docker, 쿠버네티스 → Kubernetes, 레디스 → Redis.
