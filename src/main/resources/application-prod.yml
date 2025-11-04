@@ -4,10 +4,10 @@ spring:
       on-profile: prod
 
   datasource:
-    url: jdbc:h2:mem:ucamp;MODE=Oracle;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    url: "${ORACLE_URL}"
+    driver-class-name: oracle.jdbc.OracleDriver
+    username: "${ORACLE_USER}"
+    password: "${ORACLE_PASSWORD}"
 
   h2:
     console:
