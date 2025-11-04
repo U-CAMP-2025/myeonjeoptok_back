@@ -43,17 +43,22 @@ jobs:
           docker build -t "$IMAGE" .
           docker push "$IMAGE"
 
-      - name: ADD SSH Key
+      - name: Prepare SSH key
         run: |
-          echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
-          chmod 600 key.pem
+          umask 077
+          mkdir -p ~/.ssh
+          printf '%s' "${{ secrets.EC2_SSH_KEY }}" | sed 's/\r$//' > ~/.ssh/ec2_key
+          chmod 600 ~/.ssh/ec2_key
+          ssh-keygen -y -f ~/.ssh/ec2_key > ~/.ssh/ec2_key.pub || true
+          ssh-keygen -lf ~/.ssh/ec2_key || true
 
       - name: Deploy to EC2
         run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
-            echo '${{ secrets.GHCR_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin && \
-            cd /opt/ucamp/app && \
-            docker compose pull app && \
-            docker compose up -d app && \
-            docker image prune -f
-          "
+          ssh -o StrictHostKeyChecking=no -o IdentitiesOnly=yes -i ~/.ssh/ec2_key \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
+              echo '${{ secrets.GHCR_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin && \
+              cd /opt/ucamp/app && \
+              docker compose pull app && \
+              docker compose up -d app && \
+              docker image prune -f
+            "
