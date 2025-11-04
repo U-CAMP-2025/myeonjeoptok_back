@@ -1,6 +1,7 @@
 package com.ucamp.project.controller;
 
 import com.ucamp.project.auth.security.JwtTokenProvider;
+import com.ucamp.project.model.Job;
 import com.ucamp.project.model.User;
 import com.ucamp.project.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -89,13 +90,25 @@ public class AuthController {
         Optional<User> found = users.findByKakaoId(kakaoId);
         if (found.isPresent()) {
             User u = found.get();
+
+            // 재가입 플로우
+            // 세션에 카카오 정보 적재 후 /signup
+            if ("DISABLED".equalsIgnoreCase(u.getStatus())) {
+                session.setAttribute("P_KAKAO_ID", kakaoId);
+                session.setAttribute("P_EMAIL", email);
+                session.setAttribute("P_PROFILE", profile);
+
+                String redirectUrl = clientOrigin + "/signup";
+                return ResponseEntity.status(302).location(URI.create(redirectUrl)).build();
+            }
+
+            // 정상 사용자
             String at = jwt.access(u);
             String rt = jwt.refresh(u);
             u.setRefreshToken(rt);
             users.save(u);
 
             var rtCookie = CookieUtils.refreshCookie(rt, https, cookiePath);
-
 
             String nickname = URLEncoder.encode(u.getNickname(), StandardCharsets.UTF_8);
             String profileImageUrl = u.getUsersProfileImageUrl() != null
@@ -138,24 +151,40 @@ public class AuthController {
             return ResponseEntity.badRequest().body(Map.of("error", "카카오 세션이 만료되었습니다."));
         }
 
-        // 신규 유저 생성
-        User newUser = User.builder()
-                .kakaoId(kakaoId)
-                .email(email)
-                .nickname(nickname)
-                .jobId(jobId)
-                .usersProfileImageUrl(profileImage)
-                .status("ACTIVE")
-                .role("USER")
-                .createdAt(LocalDateTime.now())
-                .build();
-        User u = users.save(newUser);
+        var existing = users.findByKakaoId(kakaoId);
+        User u;
+        if (existing.isPresent()) {
+            // 재가입
+            u = existing.get();
+            u.setNickname(nickname);
+            u.setJobId(jobId);
+            u.setJob(Job.builder().jobId(jobId).build());
+            u.setUsersProfileImageUrl(profileImage);
+            u.setRole("USER");
+            u.setStatus("ACTIVE");
+            u.setEmail(email);
+            u.setCreatedAt(u.getCreatedAt() == null ? LocalDateTime.now() : u.getCreatedAt());
+            users.save(u);
+        } else {
+            // 최초가입
+            u = users.save(User.builder()
+                            .kakaoId(kakaoId)
+                            .email(email)
+                            .nickname(nickname)
+                            .jobId(jobId)
+                            .job(Job.builder().jobId(jobId).build())
+                            .usersProfileImageUrl(profileImage)
+                            .status("ACTIVE")
+                            .role("USER")
+                            .createdAt(LocalDateTime.now())
+                    .build());
+        }
 
         // 토큰 발급
         String accessToken = jwt.access(u);
         String refreshToken = jwt.refresh(u);
-        newUser.setRefreshToken(refreshToken);
-        users.save(newUser);
+        u.setRefreshToken(refreshToken);
+        users.save(u);
         // 세션 정리
         session.invalidate();
 
@@ -165,8 +194,8 @@ public class AuthController {
                 .header("Set-Cookie", rtCookie.toString())
                 .body(Map.of(
                         "accessToken", accessToken,
-                        "nickname", newUser.getNickname(),
-                        "profileImageUrl", newUser.getUsersProfileImageUrl()
+                        "nickname", u.getNickname(),
+                        "profileImageUrl", u.getUsersProfileImageUrl()
                 ));
     }
 
@@ -280,13 +309,11 @@ public class AuthController {
     @DeleteMapping("/withdraw")
     public ResponseEntity<Map<String, Object>> withdraw(
             @RequestHeader(value = "Authorization", required = false) String authorization) {
-        // 액세스 토큰 확인
-        String bearer = (authorization != null && authorization.startsWith("Bearer "))
-                ? authorization.substring(7) : null;
+
+        String bearer = (authorization != null && authorization.startsWith("Bearer ")) ? authorization.substring(7) : null;
         if (bearer == null || !jwt.valid(bearer)) {
             return ResponseEntity.status(401).body(Map.of(
-                    "success", false,
-                    "message", "Invalid or missing access token"
+                    "success", false, "message", "Invalid or missing access token"
             ));
         }
 
@@ -294,34 +321,28 @@ public class AuthController {
         User u = users.findById(uid).orElse(null);
         if (u == null) {
             return ResponseEntity.status(404).body(Map.of(
-                    "success", false,
-                    "message", "User not found"
+                    "success", false, "message", "User not found"
             ));
         }
 
-        // 소프트 삭제: STATUS 마킹 + 민감정보 비활성화 + 리프레시 토큰 무효화
-        u.setStatus("DELETED");
+        // 우리 서비스 계정 비활성화
+        u.setStatus("DISABLED");
         u.setRefreshToken(null);
-        // 닉네임/이메일은 유니크 제약이 있어 새 사용자에게 재사용할 수 있도록 변경
-        // (필요시 프론트에서 표시용으로는 가려쓰도록)
+
         String suffix = "_" + uid;
-        if (u.getNickname() != null) {
-            u.setNickname("deleted" + suffix);
-        }
-        if (u.getEmail() != null) {
-            u.setEmail("deleted" + suffix + "@example.invalid");
-        }
+        if (u.getNickname() != null) u.setNickname("deleted" + suffix);
+        if (u.getEmail() != null) u.setEmail("deleted" + suffix + "@example.invalid");
         users.save(u);
 
-        // 3) 클라이언트 쿠키에서 refresh 토큰 제거
+        // 클라이언트 refresh 쿠키 제거
         var clear = CookieUtils.clearRefreshCookie(https, cookiePath);
 
-        // 4) (선택) 카카오 서버-사이드 로그아웃: 가입 해제는 아니지만, 현재 세션 무효화 목적
+        // 카카오 연결 끊기
         try {
             if (u.getKakaoId() != null && adminKey != null && !adminKey.isBlank()) {
                 WebClient.create()
                         .post()
-                        .uri("https://kapi.kakao.com/v1/user/logout")
+                        .uri("https://kapi.kakao.com/v1/user/unlink")
                         .header("Authorization", "KakaoAK " + adminKey)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .body(BodyInserters.fromFormData("target_id_type", "user_id")
@@ -335,9 +356,7 @@ public class AuthController {
 
         return ResponseEntity.ok()
                 .header("Set-Cookie", clear.toString())
-                .body(Map.of(
-                        "success", true,
-                        "message", "Account has been withdrawn"
-                ));
+                .body(Map.of("success", true, "message", "Account has been withdrawn"));
     }
+
 }
