@@ -46,7 +46,7 @@ public class NotificationService {
 
     @Transactional
     public void readAll(Long userId) {
-        for(Notification noti : notificationRepository.findAllByUserId(101l)){
+        for(Notification noti : notificationRepository.findAllByUserId(userId)){
             noti.setNotiRead("Y");
         }
     }
