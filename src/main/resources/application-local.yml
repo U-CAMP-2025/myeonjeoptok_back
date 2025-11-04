@@ -7,8 +7,8 @@ spring:
 #    url: jdbc:h2:mem:ucamp;MODE=Oracle;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     url: jdbc:oracle:thin:@localhost:1521:XE
     driver-class-name: oracle.jdbc.OracleDriver
-    username: system
-    password: ucamp
+    username: SCOTT
+    password: TIGER
 
   h2:
     console:
@@ -48,7 +48,7 @@ client:
 
 odcloud:
   api:
-    key: e613c3b5927ddae9759cce4429a6d33a2916a46b3c3c80f38a8a4b34ac4f32c8
+    key: "${ODCLOUD_API_KEY}"
 
 openai:
   apiKey: ${OPENAI_API_KEY}   # 또는 평문 키(로컬 테스트용)
