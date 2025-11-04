@@ -4,6 +4,7 @@ package com.ucamp.project.service;
 import com.ucamp.project.dto.*;
 import com.ucamp.project.model.Interviewer;
 import com.ucamp.project.model.Post;
+import com.ucamp.project.model.Qa;
 import com.ucamp.project.model.Simulation;
 import com.ucamp.project.repository.PostRepository;
 import com.ucamp.project.repository.SimulationRepository;
@@ -11,6 +12,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -78,29 +82,36 @@ public class SimulationService {
         return simulationRepository.findByUser_UserIdOrderBySimulationIdDesc(userId);
     }
 
-    @Transactional
-    public void finalizeToPost(SimulationResultDto result) {
-        Long postId = result.getPost().getPostId();
 
-        // Post 및 QA 엔티티 로드
-        Post post = postRepository.findByIdFetchQa(postId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 Post가 존재하지 않습니다."));
 
-        // qaList 순회하며 transContent -> qaAnswer로 덮어쓰기
-        for (QaDto qaDto : result.getPost().getQaList()) {
-            post.getQaList().stream()
-                    .filter(q -> q.getQaId().equals(qaDto.getQaId()))
-                    .findFirst()
-                    .ifPresent(q -> {
-                        if (qaDto.getTransContent() != null && !qaDto.getTransContent().isBlank()) {
-                            q.setQaAnswer(qaDto.getTransContent().trim());
-                        }
-                    });
-        }
+//    @Transactional
+//    public void applyToPost(Long postId, List<SaveResultRequest.Item> items) {
+//        Post post = postRepository.findByIdFetchQa(postId)
+//                .orElseThrow(() -> new IllegalArgumentException("해당 Post가 존재하지 않습니다."));
+//
+//        Map<Long, Qa> qaMap = post.getQaList().stream()
+//                .collect(Collectors.toMap(Qa::getQaId, Function.identity()));
+//
+//        boolean append = false; // ← 덮어쓰기 모드로 전환
+//
+//        for (SaveResultRequest.Item it : items) {
+//            Qa target = qaMap.get(it.getQaId());
+//            if (target == null) continue;
+//
+//            String incoming = it.getTransContent();
+//            if (incoming == null || incoming.isBlank()) continue; // 비어있으면 반영 X
+//
+//            incoming = incoming.trim();
+//
+//            if (append) {
+//                String prev = target.getQaAnswer();
+//                target.setQaAnswer((prev == null || prev.isBlank()) ? incoming : prev + "\n\n" + incoming);
+//            } else {
+//                target.setQaAnswer(incoming); // ← 항상 교체
+//            }
+//        }
+//    }
 
-        // 상태 갱신 등 필요 시 추가
-        // post.setStatus("FINALIZED");
 
-        postRepository.save(post);
-    }
+
 }
