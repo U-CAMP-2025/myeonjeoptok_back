@@ -13,4 +13,5 @@ public interface CertRepository extends JpaRepository<Certificate, Long> {
 
     Optional<Certificate> findTopByUserUserIdOrderByCertReqDateDesc(Long userId);
 
+    void deleteByUserUserId(Long userId);
 }

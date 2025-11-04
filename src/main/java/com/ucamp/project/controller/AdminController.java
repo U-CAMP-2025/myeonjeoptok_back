@@ -9,6 +9,8 @@ import com.ucamp.project.service.CertService;
 import com.ucamp.project.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,9 +27,9 @@ public class AdminController {
 
     // 유저 전체 조회
     @GetMapping("/users")
-    public List<UserResponse> findAllUsers() {
+    public Page<UserResponse> findAllUsers(Pageable pageable) {
         log.info("요청 들어옴?");
-        return userService.findAllWithCertAndSimulInfo();
+        return userService.findAllWithCertAndSimulInfo(pageable);
     }
     // '합격자' 인증 신청한 유저 조회
     @GetMapping("/users/certificate")
@@ -46,8 +48,8 @@ public class AdminController {
 
     // 시뮬레이션 처리 상태를 목록으로 조회
     @GetMapping("/transcription")
-    public List<UserWithSimulDTO> findAllTranscriptionStatus() {
-        return adminService.findAllTranscriptionStatus();
+    public Page<UserWithSimulDTO> findAllTranscriptionStatus(Pageable pageable) {
+        return adminService.findAllTranscriptionStatus(pageable);
     }
 
 

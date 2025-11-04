@@ -77,10 +77,15 @@ public class CertService {
     }
 
     // 합격자 인증 생성
+    @Transactional
     public void createCertificate(Long userId, String fileName) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("유저 없음: " + userId));
 
+        // 기존 인증 정보 삭제
+        certRepository.deleteByUserUserId(userId);
+
+        // 새 인증 생성
         Certificate cert = Certificate.builder()
                 .user(user)
                 .certFileUrl("temp") // 이미지 접근 경로
