@@ -41,11 +41,15 @@ public class CertService {
                 .orElseThrow(() -> new RuntimeException("해당 유저의 신청 정보 없음"));
         log.info("certificate?: {}", cert.toString());
 
+
+        String message;
         // 2. User.passStatus 업데이트
         if ("APPROVED".equalsIgnoreCase(passStatus)) {
             user.setPassStatus("Y");
+            message="합격자 인증이 승인되었습니다.";
         } else if ("REJECTED".equalsIgnoreCase(passStatus)) {
             user.setPassStatus("N");
+            message="합격자 인증이 반려되었습니다.";
         } else {
             throw new IllegalArgumentException("passStatus는 APPROVED 또는 REJECTED만 가능");
         }
@@ -53,8 +57,6 @@ public class CertService {
         // 3. Certificate 업데이트
         cert.setCertStatus(passStatus);
         cert.setCertTrmtDate(LocalDateTime.now());
-
-        String message = "합격자 인증이 수락되었습니다.";
 
         Notification noti = Notification.builder()
                 .notiId(null)
