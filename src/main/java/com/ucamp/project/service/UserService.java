@@ -101,4 +101,11 @@ import java.util.NoSuchElementException;
                 .userProfileImageUrl(user.getUsersProfileImageUrl())
                 .build();
     }
+
+    // user role 조회
+    public String findUserRoleByUserId(Long userId) {
+        User user = userRepository.findByUserId(userId)
+            .orElseThrow(() -> new RuntimeException("유저가 존재하지 않습니다."));
+        return user.getRole();
+    }
 }
