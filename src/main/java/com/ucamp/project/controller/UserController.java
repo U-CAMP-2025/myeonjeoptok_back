@@ -35,7 +35,6 @@ public class UserController {
 
     @GetMapping("/all")
     public List<UserResponse> getAll() {
-        log.info("ㅁㄴㅇㄹㅇㅁㄴㄹ");
         return userService.findAll();
     }
 
@@ -80,4 +79,10 @@ public class UserController {
     }
 
 
+    @GetMapping("/role")
+    public ResponseEntity<Map<String, Object>> getRole() {
+        Long uid = getCurrentUserId();
+        String role = userService.findUserRoleByUserId(uid);
+        return ResponseEntity.ok(Map.of("role", role));
+    }
 }
