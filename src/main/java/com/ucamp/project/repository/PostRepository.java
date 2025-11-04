@@ -17,6 +17,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT p FROM Post p WHERE user.userId = :userId")
     List<Post> simulGetPost(@Param("userId") Long userId);
 
+
     Optional<Post> findByUserUserIdAndPostId(Long userId, Long postId);
 
     @Query(
@@ -100,6 +101,14 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             nativeQuery = true
     )
     Page<Object[]> findPostsWithJoinsNotJobs(@Param("jobIds") List<Long> jobIds, Pageable pageable);
+
+    // DB에 저장 완료 후 응답 반환
+    @Query("""
+    select p from Post p
+    left join fetch p.qaList q
+    where p.postId = :postId
+""")
+    Optional<Post> findByIdFetchQa(@Param("postId") Long postId);
 
 
 }

@@ -20,26 +20,36 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("""
         SELECT new com.ucamp.project.dto.UserResponse(
-            u.userId,
-            u.nickname,
-            u.email,
-            j.jobId,
-            j.jobName,
-            u.passStatus,
-            u.createdAt,
-            u.role,
-            s.simulationStatus,
-            s.simulationCompletedAt,
-            c.certStatus,
-            c.certReqDate,
-            c.certTrmtDate,
-            c.certFileUrl
-        )
-        FROM User u
-        LEFT JOIN u.job j
-        LEFT JOIN Certificate c ON c.user.userId = u.userId
-        LEFT JOIN Simulation s ON s.user.userId = u.userId
-        ORDER BY u.createdAt DESC
+                        u.userId,
+                        u.nickname,
+                        u.email,
+                        j.jobId,
+                        j.jobName,
+                        u.passStatus,
+                        u.createdAt,
+                        u.role,
+                        s.simulationStatus,
+                        s.simulationCompletedAt,
+                        c.certStatus,
+                        c.certReqDate,
+                        c.certTrmtDate,
+                        c.certFileUrl
+                    )
+                    FROM User u
+                    LEFT JOIN u.job j
+                    LEFT JOIN Certificate c\s
+                        ON c.certReqDate = (
+                            SELECT MAX(c2.certReqDate)
+                            FROM Certificate c2
+                            WHERE c2.user.userId = u.userId
+                        )
+                    LEFT JOIN Simulation s\s
+                        ON s.simulationCompletedAt = (
+                            SELECT MAX(s2.simulationCompletedAt)
+                            FROM Simulation s2
+                            WHERE s2.user.userId = u.userId
+                        )
+                    ORDER BY c.certReqDate ASC, u.createdAt DESC
     """)
     List<UserResponse> findAllWithCertAndSimulInfo();
 

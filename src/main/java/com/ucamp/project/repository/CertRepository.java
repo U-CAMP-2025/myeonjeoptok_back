@@ -11,4 +11,6 @@ import java.util.Optional;
 public interface CertRepository extends JpaRepository<Certificate, Long> {
     Optional<Certificate> findByUserUserId(@Param("userId") Long userId);
 
+    Optional<Certificate> findTopByUserUserIdOrderByCertReqDateDesc(Long userId);
+
 }
