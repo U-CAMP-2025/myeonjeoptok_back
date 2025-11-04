@@ -15,7 +15,7 @@ spring:
       path: /h2-console
 
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
+    database-platform: org.hibernate.dialect.OracleDialect
     hibernate:
       ddl-auto: update
     defer-datasource-initialization: true
@@ -36,10 +36,14 @@ jwt:
   refresh-expiration: 1209600000     # 14 days (ms)akao/callback" = 1209600000
 
 client:
-  origin: "${CLIENT_ORIGIN:https://myeonjeoptok.vercel.app}"
+  origin: "${CLIENT_ORIGIN:http://localhost:3000}"
+
+odcloud:
+  api:
+    key: "${ODCLOUD_API_KEY}"
 
 openai:
-  apiKey: ${OPENAI_API_KEY}   # 또는 평문 키(로컬 테스트용)
+  apiKey: "${OPENAI_API_KEY}"   # 또는 평문 키(로컬 테스트용)
   baseUrl: https://api.openai.com/v1
 
   sttModel: gpt-4o-mini-transcribe
