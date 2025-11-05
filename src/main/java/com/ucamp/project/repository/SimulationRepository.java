@@ -46,4 +46,6 @@ public interface SimulationRepository extends JpaRepository<Simulation, Long> {
     void deleteByPost(Post post);
 
     List<Simulation> findByPost(Post post);
+
+    List<Simulation> findAllByUser_UserId(Long userId);
 }
