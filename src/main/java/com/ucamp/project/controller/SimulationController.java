@@ -1,19 +1,20 @@
 package com.ucamp.project.controller;
 
 import com.ucamp.project.dto.ApiResponse;
+import com.ucamp.project.dto.FinalizeRequest;
+import com.ucamp.project.dto.QaDto;
 import com.ucamp.project.dto.SimulationDetailResponse;
-import com.ucamp.project.dto.SimulationResultDto;
 import com.ucamp.project.model.Simulation;
 import com.ucamp.project.model.Transcription;
 import com.ucamp.project.model.User;
 import com.ucamp.project.service.*;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Path;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,6 +30,7 @@ public class SimulationController {
     private final SimulationQueryService simulationQueryService;
     private final SimulationRecordService simulationRecordService;
     private final TranscriptionService transcriptionService;
+
     @GetMapping
     public ApiResponse<Object> getPost(@AuthenticationPrincipal User user) {
         // 비로그인 사용자 요청 예외
@@ -120,6 +122,7 @@ public class SimulationController {
         if (user == null) {
             return ApiResponse.builder().code(401).message("로그인이 필요합니다.").build();
         }
+
         // 본인 소유 검증
         var dto = simulationQueryService.buildResult(simulationId); // PostDto + QaDto(transContent 포함)
         return ApiResponse.builder()
@@ -143,24 +146,31 @@ public class SimulationController {
     }
 
     @PutMapping("/{simulationId}/finalize")
-    public ApiResponse<Object> finalizeSimulation(@PathVariable Long simulationId,
-                                                  @AuthenticationPrincipal User user) {
+    public ApiResponse<Object> finalizeSelection(
+            @PathVariable Long simulationId,
+            @AuthenticationPrincipal User user,
+            @RequestBody @Valid FinalizeRequest request
+    ) {
         if (user == null) {
             return ApiResponse.builder().code(401).message("로그인이 필요합니다.").build();
         }
-
         simulationService.ensureOwner(simulationId, user.getUserId());
 
-        // 여기서 buildResult()를 통해 최신 데이터 가져오기
-        SimulationResultDto result = simulationQueryService.buildResult(simulationId);
+        var finalList = simulationService.finalizeReplaceAndDelete(simulationId, request);
 
-        // 시뮬레이션 결과를 Post에 반영
-        simulationService.finalizeToPost(result);
+        var respQaList = finalList.stream().map(q ->
+                QaDto.builder()
+                        .qaId(q.getQaId())
+                        .qaOrder(q.getQaOrder())
+                        .qaQuestion(q.getQaQuestion())
+                        .qaAnswer(q.getQaAnswer())
+                        .build()
+        ).toList();
 
         return ApiResponse.builder()
                 .code(200)
                 .message("success")
-                .data("시뮬레이션 결과가 게시글에 저장되었습니다.")
+                .data(Map.of("qaList", respQaList))
                 .build();
     }
 

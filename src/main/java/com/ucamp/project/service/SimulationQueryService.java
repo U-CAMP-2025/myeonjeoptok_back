@@ -1,13 +1,16 @@
 package com.ucamp.project.service;
 
 import com.ucamp.project.dto.*;
+import com.ucamp.project.model.Simulation;
 import com.ucamp.project.model.Transcription;
+import com.ucamp.project.repository.SimulationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -15,6 +18,7 @@ import java.util.stream.Collectors;
 public class SimulationQueryService {
     private final SimulationService simulationService;
     private final TranscriptionService transcriptionService;
+    private final SimulationRepository  simulationRepository;
 
     @Transactional(readOnly = true)
     public SimulationResultDto buildResult(Long simulationId) {
@@ -46,5 +50,10 @@ public class SimulationQueryService {
                 .simulationId(simulationId)
                 .post(post)
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Simulation> findById(Long id) {
+        return simulationRepository.findById(id);
     }
 }
