@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,6 +41,10 @@ public class SimulationService {
     public SimulationDetailResponse findDetail(Long simulationId) {
         Simulation sim = simulationRepository.findBySimulationId(simulationId)
                 .orElseThrow(() -> new IllegalArgumentException("Simulation not found: " + simulationId));
+
+        if(!sim.getSimulationStatus().equals("INPROGRESS")){
+            throw new RuntimeException("접근 불가");
+        }
 
         // interviewer 매핑
         Interviewer interviewer = sim.getInterviewer();
@@ -75,7 +80,7 @@ public class SimulationService {
 
 
     public List<Simulation> findByUserId(Long userId) {
-        return simulationRepository.findByUser_UserIdOrderBySimulationIdDesc(userId);
+        return simulationRepository.findLatestSimulationPerPost(userId);
     }
 
     @Transactional
@@ -102,5 +107,14 @@ public class SimulationService {
         // post.setStatus("FINALIZED");
 
         postRepository.save(post);
+    }
+
+    @Transactional
+    public void end(Long simulationId, Long qaCount) {
+        Simulation simul =  simulationRepository.findBySimulationId(simulationId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 시뮬이 존재하지 않습니다."));
+        simul.setSimulationQACount(qaCount);
+        simul.setSimulationCompletedAt(LocalDateTime.now());
+        simul.setSimulationStatus("SUCCESS");
     }
 }

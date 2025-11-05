@@ -11,6 +11,7 @@ public class SimulationRecordItemDto {
     private Long simulationId;
     private String simulationStatus; // INPROGRESS / COMPLETED
     private PostBrief post;
+    private Long count;
 
     @Getter
     @Builder

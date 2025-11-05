@@ -3,6 +3,7 @@ package com.ucamp.project.service;
 import com.ucamp.project.dto.SimulationRecordItemDto;
 import com.ucamp.project.model.Simulation;
 import com.ucamp.project.repository.PostJobRepository;
+import com.ucamp.project.repository.SimulationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +16,7 @@ public class SimulationRecordService {
 
     private final SimulationService simulationService;
     private final PostJobRepository postJobRepository; // 추가
+    private final SimulationRepository simulationRepository;
 
     @Transactional(readOnly = true)
     public List<SimulationRecordItemDto> listMyRecords(Long userId) {
@@ -38,6 +40,7 @@ public class SimulationRecordService {
                                     .job(jobs)
                                     .build()
                     )
+                    .count(simulationRepository.countSuccessByUserAndPost(userId,postId))
                     .build();
         }).toList();
     }
