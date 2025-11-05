@@ -13,10 +13,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 //
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -110,22 +107,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByNicknameIgnoreCase(String nickname);
 
     @Query(value = """
-                    SELECT
-                        u.user_id AS userId,
-                         u.nickname AS nickname,
-                         u.pass_status AS passStatus,
-                         j.job_name AS jobName,
-                         COUNT(s.simulation_id) AS cnt
-                     FROM users u
-                     JOIN job j ON u.job_id = j.job_id
-                     JOIN simulation s ON s.user_id = u.user_id
-                     GROUP BY u.user_id, u.nickname, u.pass_status, j.job_name
-                     ORDER BY cnt DESC
-            """, nativeQuery = true)
-    List<Object[]> findAllBookmark();
-
-
-    @Query(value = """
             SELECT
                 u.user_id AS userId,
                 u.nickname AS nickname,
@@ -138,6 +119,28 @@ public interface UserRepository extends JpaRepository<User, Long> {
             GROUP BY u.user_id, u.nickname, u.pass_status, j.job_name
             ORDER BY cnt DESC
             """, nativeQuery = true)
-    List<Object[]> findAllPractice();
+    List<Object[]> findAllBookmark();
+
+
+    @Query(value = """
+            SELECT
+                u.user_id AS userId,
+                 u.nickname AS nickname,
+                 u.pass_status AS passStatus,
+                 j.job_name AS jobName,
+                 COUNT(s.simulation_id) AS cnt
+             FROM users u
+             JOIN job j ON u.job_id = j.job_id
+             JOIN simulation s ON s.user_id = u.user_id
+             WHERE s.simulation_status = 'SUCCESS'
+             AND (
+                 (:period = 'thisweek' AND s.simulation_completed_at BETWEEN TRUNC(SYSDATE, 'D') AND TRUNC(SYSDATE, 'D') + 7) OR
+                 (:period = 'lastweek' AND s.simulation_completed_at BETWEEN TRUNC(SYSDATE, 'D') - 7 AND TRUNC(SYSDATE, 'D')) OR
+                 (:period NOT IN ('thisweek', 'lastweek'))
+             )
+             GROUP BY u.user_id, u.nickname, u.pass_status, j.job_name
+             ORDER BY cnt DESC
+            """, nativeQuery = true)
+    List<Object[]> findAllPractice(String period);
 
 }

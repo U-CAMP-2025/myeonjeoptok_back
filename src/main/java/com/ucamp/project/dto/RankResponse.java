@@ -10,7 +10,7 @@ import oracle.sql.CHAR;
 public class RankResponse {
     private Long userId;
     private String nickname;
-    private String passStatus;
+    private Character passStatus;
     private String jobName;
     private Long cnt;
 }
