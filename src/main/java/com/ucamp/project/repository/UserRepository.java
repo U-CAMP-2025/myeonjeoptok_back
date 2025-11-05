@@ -111,12 +111,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
                 u.user_id AS userId,
                 u.nickname AS nickname,
                 u.pass_status AS passStatus,
+                u.users_profile_image_url AS usersProfileImageUrl,
                 j.job_name AS jobName,
                 COALESCE(SUM(p.post_import_count),0) AS cnt
             FROM users u
             JOIN job j ON u.job_id = j.job_id
             JOIN post p ON u.user_id = p.user_id
-            GROUP BY u.user_id, u.nickname, u.pass_status, j.job_name
+            GROUP BY u.user_id, u.nickname, u.pass_status, u.users_profile_image_url, j.job_name
             ORDER BY cnt DESC
             """, nativeQuery = true)
     List<Object[]> findAllBookmark();
@@ -127,6 +128,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
                 u.user_id AS userId,
                  u.nickname AS nickname,
                  u.pass_status AS passStatus,
+                 u.users_profile_image_url AS usersProfileImageUrl,
                  j.job_name AS jobName,
                  COUNT(s.simulation_id) AS cnt
              FROM users u
@@ -138,7 +140,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
                  (:period = 'lastweek' AND s.simulation_completed_at BETWEEN TRUNC(SYSDATE, 'D') - 7 AND TRUNC(SYSDATE, 'D')) OR
                  (:period NOT IN ('thisweek', 'lastweek'))
              )
-             GROUP BY u.user_id, u.nickname, u.pass_status, j.job_name
+             GROUP BY u.user_id, u.nickname, u.pass_status, u.users_profile_image_url, j.job_name
              ORDER BY cnt DESC
             """, nativeQuery = true)
     List<Object[]> findAllPractice(String period);
