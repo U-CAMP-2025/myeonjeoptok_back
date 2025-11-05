@@ -40,6 +40,7 @@ public class SimulationRecordService {
                                     .job(jobs)
                                     .build()
                     )
+                    .completedAt(sim.getSimulationCompletedAt())
                     .count(simulationRepository.countSuccessByUserAndPost(userId,postId))
                     .build();
         }).toList();
