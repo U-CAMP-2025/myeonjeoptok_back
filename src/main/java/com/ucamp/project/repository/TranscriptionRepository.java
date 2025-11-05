@@ -27,4 +27,8 @@ public interface TranscriptionRepository extends JpaRepository<Transcription, Lo
     void deleteBySimulation(Simulation sim);
 
     void deleteAllByQaQaId(Long qaId);
+
+    void deleteAllBySimulation(Simulation simulation);
+
+    void deleteAllBySimulation_SimulationId(Long simulationId);
 }
