@@ -28,6 +28,7 @@ public class SimulationService {
     private final SimulationRepository simulationRepository;
     private final QaRepository qaRepository;
     private final TranscriptionRepository  transcriptionRepository;
+    private final PostRepository postRepository;
 
     public List<Simulation> findAll(){
         return simulationRepository.findAll();
@@ -190,12 +191,24 @@ public class SimulationService {
 
 
     @Transactional
-    public void end(Long simulationId, Long qaCount) {
+    public boolean end(Long simulationId, Long qaCount) {
         Simulation simul =  simulationRepository.findBySimulationId(simulationId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 시뮬이 존재하지 않습니다."));
+
+        Post post = postRepository.findById(simul.getPost().getPostId())
+                .orElseThrow(() -> new IllegalArgumentException("해당 게시물이 존재하지 않습니다."));
+
+        if(post.getQaList().size() != qaCount){
+            transcriptionRepository.deleteAllBySimulation(simul);
+            simulationRepository.deleteById(simulationId);
+            return false;
+        }
+
         simul.setSimulationQACount(qaCount);
         simul.setSimulationCompletedAt(LocalDateTime.now());
         simul.setSimulationStatus("SUCCESS");
+
+        return true;
     }
 
     @Transactional

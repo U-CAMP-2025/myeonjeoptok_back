@@ -7,8 +7,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Date;
 import java.util.List;
 
 @RestController
@@ -26,8 +28,8 @@ public class RankController {
     }
 
     @GetMapping("/practice")
-    public ResponseEntity<List<RankResponse>> findAllPractice(){
-        List<RankResponse> rank = rankService.findAllPractice();
+    public ResponseEntity<List<RankResponse>> findAllPractice(@RequestParam (value = "period", required = false) String period){
+        List<RankResponse> rank = rankService.findAllPractice(period);
         return ResponseEntity.ok(rank);
     }
 

@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -35,7 +36,7 @@ public class RankService {
                 .map(row -> RankResponse.builder()
                         .userId(((Number) row[0]).longValue())
                         .nickname((String) row[1])
-                        .passStatus((String) row[2])
+                        .passStatus((Character) row[2])
                         .jobName((String) row[3])
                         .cnt(((Number) row[4]).longValue())
                         .build())
@@ -44,23 +45,21 @@ public class RankService {
         return userList;
 
     };
-    public List<RankResponse> findAllPractice(){
-        List<Object[]> users = userRepository.findAllPractice();
+    public List<RankResponse> findAllPractice(String period){
+        List<Object[]> users = userRepository.findAllPractice(period);
         log.info("users: {}", users);
 
         List<RankResponse> userList = users.stream()
                 .map(row -> RankResponse.builder()
                         .userId(((Number) row[0]).longValue())
                         .nickname((String) row[1])
-                        .passStatus((String) row[2])
+                        .passStatus((Character) row[2])
                         .jobName((String) row[3])
                         .cnt(((Number) row[4]).longValue())
                         .build())
                 .toList();
 
         return userList;
-
-
     }
 
 }
