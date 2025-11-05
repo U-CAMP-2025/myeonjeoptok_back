@@ -10,7 +10,9 @@ import com.ucamp.project.model.User;
 import com.ucamp.project.service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,6 +23,7 @@ import java.util.Map;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/simulation")
+@Slf4j
 public class SimulationController {
 
     private final PostService postService;
@@ -177,14 +180,20 @@ public class SimulationController {
     @PatchMapping("/{simulationId}/{qaCount}")
     public ApiResponse<?> stopSimulation(@PathVariable Long simulationId, @PathVariable Long qaCount){
 
-        simulationService.end(simulationId,qaCount);
+        String message;
+
+        if(simulationService.end(simulationId,qaCount)){
+            message = "success";
+            log.info("SUCCESS");
+        } else {
+            message = "fail";
+            log.info("FAIL");
+        }
 
         return ApiResponse.builder()
                 .code(200)
-                .message("success")
+                .message(message)
                 .data("ok")
                 .build();
-
     }
-
 }
