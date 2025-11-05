@@ -8,6 +8,8 @@ import com.ucamp.project.model.User;
 import com.ucamp.project.repository.JobRepository;
 import com.ucamp.project.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -78,8 +80,8 @@ import java.util.NoSuchElementException;
                 .build();
     }
     //
-    public List<UserResponse> findAllWithCertAndSimulInfo() {
-        return userRepository.findAllWithCertAndSimulInfo();
+    public Page<UserResponse> findAllWithCertAndSimulInfo(Pageable pageable) {
+        return userRepository.findAllWithCertAndSimulInfo(pageable);
     }
 
     public List<UserWithCertDTO> findAllWithCert() { ;
@@ -100,5 +102,12 @@ import java.util.NoSuchElementException;
                 .status(user.getStatus())
                 .userProfileImageUrl(user.getUsersProfileImageUrl())
                 .build();
+    }
+
+    // user role 조회
+    public String findUserRoleByUserId(Long userId) {
+        User user = userRepository.findByUserId(userId)
+            .orElseThrow(() -> new RuntimeException("유저가 존재하지 않습니다."));
+        return user.getRole();
     }
 }
