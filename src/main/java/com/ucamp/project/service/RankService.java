@@ -37,8 +37,9 @@ public class RankService {
                         .userId(((Number) row[0]).longValue())
                         .nickname((String) row[1])
                         .passStatus((Character) row[2])
-                        .jobName((String) row[3])
-                        .cnt(((Number) row[4]).longValue())
+                        .profileImageUrl((String) row[3])
+                        .jobName((String) row[4])
+                        .cnt(((Number) row[5]).longValue())
                         .build())
                 .toList();
 
@@ -54,8 +55,9 @@ public class RankService {
                         .userId(((Number) row[0]).longValue())
                         .nickname((String) row[1])
                         .passStatus((Character) row[2])
-                        .jobName((String) row[3])
-                        .cnt(((Number) row[4]).longValue())
+                        .profileImageUrl((String) row[3])
+                        .jobName((String) row[4])
+                        .cnt(((Number) row[5]).longValue())
                         .build())
                 .toList();
 
