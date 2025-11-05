@@ -77,7 +77,7 @@ public class SimulationController {
 
     @GetMapping("/{id}/start")
     public ApiResponse<Object> getSimulation(@PathVariable Long id) {
-        SimulationDetailResponse data = simulationService.findDetail(id);
+        SimulationDetailResponse data = simulationService.findStart(id);
         ApiResponse<Object> resp = ApiResponse.builder()
                 .code(200)
                 .message("success")

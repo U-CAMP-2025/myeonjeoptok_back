@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -22,13 +23,21 @@ public class SimulationQueryService {
 
     @Transactional(readOnly = true)
     public SimulationResultDto buildResult(Long simulationId) {
-        // 시뮬 상세 (PostDto + QaDto 리스트 포함해야 함)
+        // 시뮬 상세
         SimulationDetailResponse detail = simulationService.findDetail(simulationId);
 
         Map<Long, String> trMap = transcriptionService.findAllBySimulation(simulationId).stream()
-                .collect(Collectors.toMap(t -> t.getQa().getQaId(), Transcription::getTrAnswerText));
+                // 키가 될 qaId null
+                .filter(t -> t.getQa() != null && t.getQa().getQaId() != null)
 
-        // detail.getPost().getQaList()는 QaDto 리스트라고 가정
+                .sorted(Comparator.comparing(Transcription::getCompletedAt,
+                        Comparator.nullsFirst(Comparator.naturalOrder())))
+                .collect(Collectors.toMap(
+                        t -> t.getQa().getQaId(),
+                        t -> Optional.ofNullable(t.getTrAnswerText()).orElse(""),
+                        (prev, curr) -> curr
+                ));
+
         List<QaDto> mapped = detail.getPost().getQaList().stream()
                 .map(qa -> QaDto.builder()
                         .qaId(qa.getQaId())

@@ -50,10 +50,46 @@ public class SimulationService {
         Simulation sim = simulationRepository.findBySimulationId(simulationId)
                 .orElseThrow(() -> new IllegalArgumentException("Simulation not found: " + simulationId));
 
+
+
+        // interviewer 매핑
+        Interviewer interviewer = sim.getInterviewer();
+        InterviewerDto interviewerDto = InterviewerDto.builder()
+                .interviewerId(interviewer.getInterviewerId())
+                .interviewerImageUrl(interviewer.getInterviewerImageUrl())
+                .build();
+
+        // post + qa 리스트 매핑
+        Post post = sim.getPost();
+        List<QaDto> qaDtos = post.getQaList().stream()
+                .map(q -> QaDto.builder()
+                        .qaId(q.getQaId())
+                        .qaOrder(q.getQaOrder())
+                        .qaQuestion(q.getQaQuestion())
+                        .qaAnswer(q.getQaAnswer())
+                        .build())
+                .toList();
+
+        PostDto postDto = PostDto.builder()
+                .postId(post.getPostId())
+                .postTitle(post.getPostTitle())
+                .postDescription(post.getPostDescription())
+                .qaList(qaDtos)
+                .build();
+
+        return SimulationDetailResponse.builder()
+                .interviewer(interviewerDto)
+                .post(postDto)
+                .simulationRandom(sim.getSimulationRandom())
+                .build();
+    }
+
+    public SimulationDetailResponse findStart(Long simulationId) {
+        Simulation sim = simulationRepository.findBySimulationId(simulationId)
+                .orElseThrow(() -> new IllegalArgumentException("Simulation not found: " + simulationId));
         if(!sim.getSimulationStatus().equals("INPROGRESS")){
             throw new RuntimeException("접근 불가");
         }
-
         // interviewer 매핑
         Interviewer interviewer = sim.getInterviewer();
         InterviewerDto interviewerDto = InterviewerDto.builder()
