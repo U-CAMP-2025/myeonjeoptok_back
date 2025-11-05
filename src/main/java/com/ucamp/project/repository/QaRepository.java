@@ -24,4 +24,11 @@ public interface QaRepository extends JpaRepository<Qa, Long> {
     order by q.qaOrder asc
 """)
     List<Qa> findAllByPostIdOrderByQaOrder(@Param("postId") Long postId);
+
+    @Query("""
+      select q from Qa q
+      join fetch q.post p
+      where q.qaId in :ids
+    """)
+    List<Qa> findAllWithPostByIds(@Param("ids") List<Long> ids);
 }

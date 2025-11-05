@@ -7,23 +7,25 @@ import com.ucamp.project.model.Post;
 import com.ucamp.project.model.Qa;
 import com.ucamp.project.model.Simulation;
 import com.ucamp.project.repository.PostRepository;
+import com.ucamp.project.repository.QaRepository;
 import com.ucamp.project.repository.SimulationRepository;
+import com.ucamp.project.repository.TranscriptionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.ArrayList;
-import java.util.List;
 
 @RequiredArgsConstructor
 @Service
 public class SimulationService {
 
     private final SimulationRepository simulationRepository;
-    private final PostRepository postRepository;
+    private final QaRepository qaRepository;
+    private final TranscriptionRepository  transcriptionRepository;
+
     public List<Simulation> findAll(){
         return simulationRepository.findAll();
     }
@@ -84,33 +86,63 @@ public class SimulationService {
 
 
 
-//    @Transactional
-//    public void applyToPost(Long postId, List<SaveResultRequest.Item> items) {
-//        Post post = postRepository.findByIdFetchQa(postId)
-//                .orElseThrow(() -> new IllegalArgumentException("해당 Post가 존재하지 않습니다."));
-//
-//        Map<Long, Qa> qaMap = post.getQaList().stream()
-//                .collect(Collectors.toMap(Qa::getQaId, Function.identity()));
-//
-//        boolean append = false; // ← 덮어쓰기 모드로 전환
-//
-//        for (SaveResultRequest.Item it : items) {
-//            Qa target = qaMap.get(it.getQaId());
-//            if (target == null) continue;
-//
-//            String incoming = it.getTransContent();
-//            if (incoming == null || incoming.isBlank()) continue; // 비어있으면 반영 X
-//
-//            incoming = incoming.trim();
-//
-//            if (append) {
-//                String prev = target.getQaAnswer();
-//                target.setQaAnswer((prev == null || prev.isBlank()) ? incoming : prev + "\n\n" + incoming);
-//            } else {
-//                target.setQaAnswer(incoming); // ← 항상 교체
-//            }
-//        }
-//    }
+    @Transactional
+    public List<Qa> finalizeReplaceAndDelete(Long simulationId, FinalizeRequest req) {
+        var sim = simulationRepository.findBySimulationId(simulationId)
+                .orElseThrow(() -> new IllegalArgumentException("Simulation not found: " + simulationId));
+        var post = sim.getPost();
+        if (post == null) throw new IllegalStateException("Simulation has no Post");
+
+        // Post의 QA 맵
+        Map<Long, Qa> qaMap = post.getQaList().stream()
+                .collect(Collectors.toMap(Qa::getQaId, q -> q));
+
+        for (var it : Optional.ofNullable(req.getQaList()).orElse(List.of())) {
+            Long oldQaId = it.getQaId();
+            String trans = Optional.ofNullable(it.getTransContent()).orElse("").trim();
+            if (oldQaId == null || trans.isBlank()) continue;
+
+            Qa old = qaMap.get(oldQaId);
+            if (old == null) {
+                // 방어: 같은 Post 소속 재확인
+                old = qaRepository.findByIdAndPostId(oldQaId, post.getPostId()).orElse(null);
+            }
+            if (old == null) continue;
+
+            Long order = old.getQaOrder();
+            String question = old.getQaQuestion();
+
+            // 1) 유니크 제약 회피: old를 임시 order로 이동
+            long tempOrder = -order; // 또는 큰 숫자
+            old.setQaOrder(tempOrder);
+            qaRepository.save(old);
+            qaRepository.flush(); // DB에 확정
+
+            // 2) 새 QA 생성(원래 order/같은 질문/새 답변)
+            Qa fresh = Qa.builder()
+                    .post(post)
+                    .qaOrder(order)
+                    .qaQuestion(question)
+                    .qaAnswer(trans.length() > 500 ? trans.substring(0, 500) : trans)
+                    .build();
+            qaRepository.save(fresh);
+            qaRepository.flush(); // fresh.qaId 확보
+
+            // 3) 모든 Transcription FK를 fresh로 치환(전역)
+            transcriptionRepository.reassignAllQa(oldQaId, fresh.getQaId());
+            // (옵션) 안전 확인
+            if (transcriptionRepository.existsByQa_QaId(oldQaId)) {
+                throw new IllegalStateException("FK 치환 실패: 여전히 oldQaId를 참조하는 행이 있습니다. oldQaId=" + oldQaId);
+            }
+
+            // 4) old QA 삭제 (이 시점이면 FK 없음 → ORA-02292 발생 X)
+            qaRepository.deleteById(oldQaId);
+            qaRepository.flush();
+        }
+
+        // 최종 목록 반환(qaOrder asc)
+        return qaRepository.findAllByPostIdOrderByQaOrder(post.getPostId());
+    }
 
 
 

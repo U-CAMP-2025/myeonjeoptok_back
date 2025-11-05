@@ -1,6 +1,8 @@
 package com.ucamp.project.controller;
 
 import com.ucamp.project.dto.ApiResponse;
+import com.ucamp.project.dto.FinalizeRequest;
+import com.ucamp.project.dto.QaDto;
 import com.ucamp.project.dto.SimulationDetailResponse;
 import com.ucamp.project.model.Simulation;
 import com.ucamp.project.model.Transcription;
@@ -140,6 +142,35 @@ public class SimulationController {
                 .code(200)
                 .message("success")
                 .data(items)
+                .build();
+    }
+
+    @PutMapping("/{simulationId}/finalize")
+    public ApiResponse<Object> finalizeSelection(
+            @PathVariable Long simulationId,
+            @AuthenticationPrincipal User user,
+            @RequestBody @Valid FinalizeRequest request
+    ) {
+        if (user == null) {
+            return ApiResponse.builder().code(401).message("로그인이 필요합니다.").build();
+        }
+        simulationService.ensureOwner(simulationId, user.getUserId());
+
+        var finalList = simulationService.finalizeReplaceAndDelete(simulationId, request);
+
+        var respQaList = finalList.stream().map(q ->
+                QaDto.builder()
+                        .qaId(q.getQaId())
+                        .qaOrder(q.getQaOrder())
+                        .qaQuestion(q.getQaQuestion())
+                        .qaAnswer(q.getQaAnswer())
+                        .build()
+        ).toList();
+
+        return ApiResponse.builder()
+                .code(200)
+                .message("success")
+                .data(Map.of("qaList", respQaList))
                 .build();
     }
 
