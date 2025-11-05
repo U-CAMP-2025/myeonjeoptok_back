@@ -4,6 +4,8 @@ import com.ucamp.project.auth.security.JwtTokenProvider;
 import com.ucamp.project.model.Job;
 import com.ucamp.project.model.User;
 import com.ucamp.project.repository.UserRepository;
+import com.ucamp.project.service.NotificationService;
+import com.ucamp.project.service.SimulationService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,8 @@ import java.util.UUID;
 public class AuthController {
     private final UserRepository users;
     private final JwtTokenProvider jwt;
+    private final NotificationService notificationService;
+    private final SimulationService simulationService;
 
     @Value("${kakao.client-id}")     String clientId;
     @Value("${kakao.client-secret}") String clientSecret;
@@ -330,9 +334,15 @@ public class AuthController {
         u.setRefreshToken(null);
 
         String suffix = "_" + uid;
-        if (u.getNickname() != null) u.setNickname("deleted" + suffix);
+        if (u.getNickname() != null) u.setNickname("(알수없음)" + suffix);
         if (u.getEmail() != null) u.setEmail("deleted" + suffix + "@example.invalid");
         users.save(u);
+
+        // notification 삭제
+        notificationService.delAll(u.getUserId());
+
+        // simulation, transcription 삭제
+        simulationService.deleteAllByUserId(u.getUserId());
 
         // 클라이언트 refresh 쿠키 제거
         var clear = CookieUtils.clearRefreshCookie(https, cookiePath);

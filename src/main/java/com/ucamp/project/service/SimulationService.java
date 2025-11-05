@@ -210,4 +210,13 @@ public class SimulationService {
 
         return true;
     }
+
+    @Transactional
+    public void deleteAllByUserId(Long userId) {
+        List<Simulation> simulations = simulationRepository.findAllByUser_UserId(userId);
+        for (Simulation sim : simulations) {
+            transcriptionRepository.deleteAllBySimulation_SimulationId(sim.getSimulationId());
+            simulationRepository.deleteById(sim.getSimulationId());
+        }
+    }
 }
