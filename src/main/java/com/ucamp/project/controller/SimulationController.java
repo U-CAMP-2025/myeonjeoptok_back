@@ -33,6 +33,7 @@ public class SimulationController {
     private final SimulationQueryService simulationQueryService;
     private final SimulationRecordService simulationRecordService;
     private final TranscriptionService transcriptionService;
+    private final AiFeedbackService aiFeedbackService;
 
     @GetMapping
     public ApiResponse<Object> getPost(@AuthenticationPrincipal User user) {
@@ -98,19 +99,43 @@ public class SimulationController {
         // 1) 임시 저장
         Path saved = tempFileService.saveToTemp(file, "sim" + simulationId + "_q" + qaId);
 
-        // 2) STT 호출
+        // 2) STT
         String transcript = sttService.transcribe(saved);
 
-        Transcription savedTr = transcriptionService.upsert(simulationId, qaId, transcript);
+        // 3) Transcription upsert
+        Transcription tr = transcriptionService.upsert(simulationId, qaId, transcript);
 
-        // 3) 응답 (url은 필요시 파일 서버나 S3 업로드 후 세팅)
+        // 2) 질문 조회 (서비스에서 상세 불러와 qaId 매칭)
+        String question = null;
+        try {
+            var detail = simulationService.findDetail(simulationId);
+            question = detail.getPost().getQaList().stream()
+                    .filter(q -> qaId.equals(q.getQaId()))
+                    .findFirst()
+                    .map(q -> q.getQaQuestion())
+                    .orElse(null);
+        } catch (Exception e) {
+            log.warn("질문 조회 실패 simId={}, qaId={}", simulationId, qaId, e);
+        }
+
+// 3) 피드백 생성 & 저장
+        String feedback = "";
+        if (question != null && !question.isBlank()) {
+            feedback = aiFeedbackService.generateFeedback(question, transcript); // 위 서비스 사용
+        }
+        if (feedback != null && !feedback.isBlank()) {
+            transcriptionService.updateFeedback(tr.getTrId(), feedback);
+        }
+
+        // 6) 프론트 응답
         Map<String, Object> data = new HashMap<>();
         data.put("simulationId", simulationId);
         data.put("qaId", qaId);
         data.put("originalName", file.getOriginalFilename());
         data.put("size", file.getSize());
         data.put("contentType", file.getContentType());
-        data.put("transcript", transcript); // ★ 프론트로 전사 텍스트 전달
+        data.put("transcript", transcript);
+        data.put("feedback", feedback);
 
         return ApiResponse.builder()
                 .code(200)
@@ -118,6 +143,7 @@ public class SimulationController {
                 .data(data)
                 .build();
     }
+
 
     @GetMapping("/{simulationId}/result")
     public ApiResponse<Object> getResult(@PathVariable Long simulationId,
