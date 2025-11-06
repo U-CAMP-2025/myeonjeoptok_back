@@ -165,7 +165,7 @@ public class AuthController {
             u.setJob(Job.builder().jobId(jobId).build());
             u.setUsersProfileImageUrl(profileImage);
             u.setRole("USER");
-            u.setStatus("ACTIVE");
+            u.setStatus("NEW");
             u.setEmail(email);
             u.setCreatedAt(u.getCreatedAt() == null ? LocalDateTime.now() : u.getCreatedAt());
             users.save(u);
@@ -178,7 +178,7 @@ public class AuthController {
                             .jobId(jobId)
                             .job(Job.builder().jobId(jobId).build())
                             .usersProfileImageUrl(profileImage)
-                            .status("ACTIVE")
+                            .status("NEW")
                             .role("USER")
                             .createdAt(LocalDateTime.now())
                     .build());
