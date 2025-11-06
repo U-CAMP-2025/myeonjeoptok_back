@@ -219,4 +219,23 @@ public class SimulationService {
             simulationRepository.deleteById(sim.getSimulationId());
         }
     }
+
+    public boolean transCheck(Long simulationId) {
+        int i = 0;
+        Simulation simulation = simulationRepository.findById(simulationId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 시뮬이 존재하지 않습니다."));
+        while (i < 12){
+            long trCount = transcriptionRepository.countBySimulation(simulation);
+            if(simulation.getSimulationQACount().equals(trCount)){
+                return true;
+            }
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+        return false;
+    }
 }
