@@ -196,4 +196,16 @@ public class SimulationController {
                 .data("ok")
                 .build();
     }
+
+    @GetMapping("{simulationId}/transCheck")
+    public ApiResponse<?> transCheck(@PathVariable Long simulationId) {
+
+        boolean isOk = simulationService.transCheck(simulationId);
+
+        return ApiResponse.builder()
+                .code(200)
+                .message("success")
+                .data(isOk)
+                .build();
+    }
 }
