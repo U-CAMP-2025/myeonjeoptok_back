@@ -53,6 +53,7 @@ public class OcrService {
             }
 
             String text = res.getFullTextAnnotation().getText();
+            responseMap.put("text", text);
             log.info("OCR 인식 텍스트:\n{}", text);
 
             // (3) 사업자등록번호 추출
