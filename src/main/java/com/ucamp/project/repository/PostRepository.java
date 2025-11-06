@@ -1,6 +1,7 @@
 package com.ucamp.project.repository;
 
 import com.ucamp.project.model.Post;
+import com.ucamp.project.model.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -29,7 +30,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                         p.post_title AS title,
                         p.post_description AS description,
                         p.post_import_count AS bookCount,
-                        COUNT(r.review_id) AS review,
+                        COUNT(DISTINCT r.review_id) AS review,
                         p.post_created_at AS createAt,
                         CASE WHEN p.post_status = 'Y' THEN 1 ELSE 0 END AS isPublic,
                         0 AS isPassed
@@ -73,7 +74,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                         p.post_title AS title,
                         p.post_description AS description,
                         p.post_import_count AS bookCount,
-                        COUNT(r.review_id) AS review,
+                        COUNT(DISTINCT r.review_id) AS review,
                         p.post_created_at AS createAt,
                         CASE WHEN p.post_status = 'Y' THEN 1 ELSE 0 END AS isPublic,
                         0 AS isPassed
@@ -110,5 +111,5 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 """)
     Optional<Post> findByIdFetchQa(@Param("postId") Long postId);
 
-
+    int countByUser(User user);
 }

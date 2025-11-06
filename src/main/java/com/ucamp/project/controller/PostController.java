@@ -8,6 +8,7 @@ import com.ucamp.project.service.PostService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,9 +21,7 @@ public class PostController {
     private final PostService postService;
 
     @GetMapping("/my")
-    public ApiResponse<?> myPosts(){
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        User user = (User)auth.getPrincipal();
+    public ApiResponse<?> myPosts(@AuthenticationPrincipal User user){
         return ApiResponse.builder().code(200).message("success").data(postService.findAllByUserId(user.getUserId())).build();
     }
 
@@ -33,9 +32,7 @@ public class PostController {
     }
 
     @PostMapping
-    public ApiResponse<?> createPost(@RequestBody PostCreateRequestDTO req){
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        User user = (User)auth.getPrincipal();
+    public ApiResponse<?> createPost(@RequestBody PostCreateRequestDTO req, @AuthenticationPrincipal User user){
         log.info("TEST" + user.getUserId());
         log.info("TEST" + req);
         Long postId = postService.createPost(req, user);
@@ -43,38 +40,33 @@ public class PostController {
     }
 
     @GetMapping("/{postId}")
-    public ApiResponse<?> selectOne(@PathVariable Long postId){
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        User user = (User)auth.getPrincipal();
+    public ApiResponse<?> selectOne(@PathVariable Long postId, @AuthenticationPrincipal User user){
 
         return ApiResponse.builder().code(200).message("success").data(postService.findById(postId, user)).build();
     }
 
     @PutMapping("/{postId}")
-    public ApiResponse<?> updatePost(@PathVariable Long postId, @RequestBody PostCreateRequestDTO req){
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        User user = (User)auth.getPrincipal();
-        log.info("TEST" + user.getUserId());
-        log.info("TEST" + req);
+    public ApiResponse<?> updatePost(@PathVariable Long postId, @RequestBody PostCreateRequestDTO req, @AuthenticationPrincipal User user){
+
         postService.updatePost(postId, req, user);
         return ApiResponse.builder().code(201).message("success").data(postId).build();
     }
 
     @DeleteMapping("/{postId}")
-    public ApiResponse<?> deleteOne(@PathVariable Long postId){
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        User user = (User)auth.getPrincipal();
+    public ApiResponse<?> deleteOne(@PathVariable Long postId, @AuthenticationPrincipal User user){
 
         return ApiResponse.builder().code(200).message("success").data(postService.deletePost(user,postId)).build();
     }
 
     @PostMapping("/{postId}")
-    public ApiResponse<?> copyPost(@PathVariable Long postId){
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        User user = (User)auth.getPrincipal();
-
+    public ApiResponse<?> copyPost(@PathVariable Long postId, @AuthenticationPrincipal User user){
         Long copyPostId = postService.copyPost(postId, user);
 
         return ApiResponse.builder().code(201).message("success").data(copyPostId).build();
+    }
+
+    @GetMapping("/count")
+    public ApiResponse<?> countPost(@AuthenticationPrincipal User user){
+        return ApiResponse.builder().code(200).message("success").data(postService.postCount(user)).build();
     }
 }
