@@ -54,9 +54,14 @@ jwt:
 client:
   origin: "${CLIENT_ORIGIN:http://localhost:3000}"
 
+
 odcloud:
   api:
     key: "${ODCLOUD_API_KEY}"
+
+vision:
+  projectId: "${VISION_PROJECT_ID}"
+  secretId: "${VISION_SECRET_ID}"
 
 openai:
   apiKey: "${OPENAI_API_KEY}"   # 또는 평문 키(로컬 테스트용)
