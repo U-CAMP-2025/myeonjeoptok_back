@@ -304,4 +304,8 @@ public class PostService {
 
         return postRecive.getPostId();
     }
+
+    public int postCount(User user) {
+        return postRepository.countByUser(user);
+    }
 }
