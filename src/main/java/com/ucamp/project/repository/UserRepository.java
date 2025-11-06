@@ -122,7 +122,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
             """, nativeQuery = true)
     List<Object[]> findAllBookmark();
 
-
+///
     @Query(value = """
             SELECT
                 u.user_id AS userId,
@@ -137,8 +137,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
              WHERE s.simulation_status = 'SUCCESS'
              AND (
                  (:period = 'thisweek' AND s.simulation_completed_at BETWEEN TRUNC(SYSDATE, 'D') AND TRUNC(SYSDATE, 'D') + 7) OR
-                 (:period = 'lastweek' AND s.simulation_completed_at BETWEEN TRUNC(SYSDATE, 'D') - 7 AND TRUNC(SYSDATE, 'D')) OR
-                 (:period NOT IN ('thisweek', 'lastweek'))
+                 (:period = 'thismonth' AND s.simulation_completed_at BETWEEN TRUNC(SYSDATE, 'MM') AND ADD_MONTHS(TRUNC(SYSDATE, 'MM'), 1)) OR
+                 (:period NOT IN ('thisweek', 'thismonth'))
              )
              GROUP BY u.user_id, u.nickname, u.pass_status, u.users_profile_image_url, j.job_name
              ORDER BY cnt DESC
