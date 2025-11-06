@@ -54,6 +54,7 @@ jwt:
 client:
   origin: "${CLIENT_ORIGIN:http://localhost:3000}"
 
+
 odcloud:
   api:
     key: "${ODCLOUD_API_KEY}"
