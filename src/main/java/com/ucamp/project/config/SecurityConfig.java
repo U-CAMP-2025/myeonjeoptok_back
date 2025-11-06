@@ -36,6 +36,7 @@ public class SecurityConfig {
 //                        .requestMatchers("/h2-console/**").permitAll() // h2사용시 주석해제
                         .requestMatchers(HttpMethod.GET, "/api/auth/**").permitAll() // 카카오, 회원가입
                         .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll() // 토큰 재발행
+                        .requestMatchers("/image/**").permitAll()
                         .requestMatchers( "/api/jobs/**", "/api/rank/**", "/api/posts/search").permitAll() // 직무, 랭킹, 면접 연습 전체 조회
                         .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN") // 어드민 페이지
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
