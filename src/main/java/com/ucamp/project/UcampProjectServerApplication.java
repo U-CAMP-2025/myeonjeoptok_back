@@ -22,7 +22,7 @@ public class UcampProjectServerApplication {
         System.setProperty("ORACLE_USER", dotenv.get("ORACLE_USER"));
         System.setProperty("ORACLE_PASSWORD", dotenv.get("ORACLE_PASSWORD"));
         System.setProperty("ODCLOUD_API_KEY", dotenv.get("ODCLOUD_API_KEY"));
-        System.setProperty("GOOGLE_APPLICATION_CREDENTIALS", dotenv.get("GOOGLE_APPLICATION_CREDENTIALS"));
+//        System.setProperty("GOOGLE_APPLICATION_CREDENTIALS", dotenv.get("GOOGLE_APPLICATION_CREDENTIALS"));
 
         SpringApplication.run(UcampProjectServerApplication.class, args);
     }
