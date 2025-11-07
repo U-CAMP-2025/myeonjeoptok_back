@@ -35,9 +35,9 @@ public class FileService {
         String contentType;
 
         if("cert".equals(type)){
-            url = "src/main/resources/static/image/"+type+"/" + id;
+            url = "/opt/ucamp/uploads/"+type+"/" + id;
         } else {
-            url = "src/main/resources/static/image/"+type+"/" + id + ".png";
+            url = "/opt/ucamp/uploads/"+type+"/" + id + ".png";
         }
 
         try {
@@ -77,7 +77,7 @@ public class FileService {
     // ① 업로드 시 임시 파일명으로 저장
     public String saveTempFile(String type, MultipartFile file) {
         try {
-            Path dir = Paths.get("src/main/resources/static/image", type);
+            Path dir = Paths.get("/opt/ucamp/uploads", type);
             Files.createDirectories(dir);
 
             String ext = getExtOrDefault(file.getOriginalFilename(), ".png");
@@ -94,7 +94,7 @@ public class FileService {
     // ② cert_id 확정 이후 임시 파일을 {cert_id}.{ext} 로 rename
     public String renameTempToCertId(String type, String tempFileName, Long certId) {
         try {
-            Path dir = Paths.get("src/main/resources/static/image", type);
+            Path dir = Paths.get("/opt/ucamp/uploads", type);
             Files.createDirectories(dir);
 
             String ext = getExtOrDefault(tempFileName, ".png");

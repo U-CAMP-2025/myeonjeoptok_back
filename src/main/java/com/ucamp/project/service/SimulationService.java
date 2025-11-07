@@ -224,7 +224,7 @@ public class SimulationService {
         int i = 0;
         Simulation simulation = simulationRepository.findById(simulationId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 시뮬이 존재하지 않습니다."));
-        while (i < 12){
+        while (i++ < 12){
             long trCount = transcriptionRepository.countBySimulation(simulation);
             if(simulation.getSimulationQACount().equals(trCount)){
                 return true;
