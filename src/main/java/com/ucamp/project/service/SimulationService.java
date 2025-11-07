@@ -125,7 +125,7 @@ public class SimulationService {
 
 
     public List<Simulation> findByUserId(Long userId) {
-        return simulationRepository.findLatestSimulationPerPost(userId);
+        return simulationRepository.findAllByUser_UserId(userId);
     }
 
 
