@@ -41,7 +41,7 @@ public class User {
     private Job job;
 
     @Column(name = "status", length = 20)
-    private String status; // e.g., ACTIVE, DISABLED, REGISTERING
+    private String status; // e.g., ACTIVE, DISABLED, NEW
 
     @Column(name = "pass_status", columnDefinition = "char(1)", length = 1)
     private String passStatus; // "Y" or "N"

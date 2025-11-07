@@ -11,4 +11,5 @@ public class QaDto {
     private String qaQuestion;
     private String qaAnswer;
     private String transContent;
+    private String feedback;
 }

@@ -4,13 +4,20 @@ package com.ucamp.project.service;
 import com.ucamp.project.dto.*;
 import com.ucamp.project.model.Interviewer;
 import com.ucamp.project.model.Post;
+import com.ucamp.project.model.Qa;
 import com.ucamp.project.model.Simulation;
 import com.ucamp.project.repository.PostRepository;
+import com.ucamp.project.repository.QaRepository;
 import com.ucamp.project.repository.SimulationRepository;
+import com.ucamp.project.repository.TranscriptionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,7 +26,10 @@ import java.util.List;
 public class SimulationService {
 
     private final SimulationRepository simulationRepository;
+    private final QaRepository qaRepository;
+    private final TranscriptionRepository  transcriptionRepository;
     private final PostRepository postRepository;
+
     public List<Simulation> findAll(){
         return simulationRepository.findAll();
     }
@@ -41,6 +51,46 @@ public class SimulationService {
         Simulation sim = simulationRepository.findBySimulationId(simulationId)
                 .orElseThrow(() -> new IllegalArgumentException("Simulation not found: " + simulationId));
 
+
+
+        // interviewer 매핑
+        Interviewer interviewer = sim.getInterviewer();
+        InterviewerDto interviewerDto = InterviewerDto.builder()
+                .interviewerId(interviewer.getInterviewerId())
+                .interviewerImageUrl(interviewer.getInterviewerImageUrl())
+                .build();
+
+        // post + qa 리스트 매핑
+        Post post = sim.getPost();
+        List<QaDto> qaDtos = post.getQaList().stream()
+                .map(q -> QaDto.builder()
+                        .qaId(q.getQaId())
+                        .qaOrder(q.getQaOrder())
+                        .qaQuestion(q.getQaQuestion())
+                        .qaAnswer(q.getQaAnswer())
+                        .build())
+                .toList();
+
+        PostDto postDto = PostDto.builder()
+                .postId(post.getPostId())
+                .postTitle(post.getPostTitle())
+                .postDescription(post.getPostDescription())
+                .qaList(qaDtos)
+                .build();
+
+        return SimulationDetailResponse.builder()
+                .interviewer(interviewerDto)
+                .post(postDto)
+                .simulationRandom(sim.getSimulationRandom())
+                .build();
+    }
+
+    public SimulationDetailResponse findStart(Long simulationId) {
+        Simulation sim = simulationRepository.findBySimulationId(simulationId)
+                .orElseThrow(() -> new IllegalArgumentException("Simulation not found: " + simulationId));
+        if(!sim.getSimulationStatus().equals("INPROGRESS")){
+            throw new RuntimeException("접근 불가");
+        }
         // interviewer 매핑
         Interviewer interviewer = sim.getInterviewer();
         InterviewerDto interviewerDto = InterviewerDto.builder()
@@ -75,32 +125,117 @@ public class SimulationService {
 
 
     public List<Simulation> findByUserId(Long userId) {
-        return simulationRepository.findByUser_UserIdOrderBySimulationIdDesc(userId);
+        return simulationRepository.findLatestSimulationPerPost(userId);
+    }
+
+
+
+    @Transactional
+    public List<Qa> finalizeReplaceAndDelete(Long simulationId, FinalizeRequest req) {
+        var sim = simulationRepository.findBySimulationId(simulationId)
+                .orElseThrow(() -> new IllegalArgumentException("Simulation not found: " + simulationId));
+        var post = sim.getPost();
+        if (post == null) throw new IllegalStateException("Simulation has no Post");
+
+        // Post의 QA 맵
+        Map<Long, Qa> qaMap = post.getQaList().stream()
+                .collect(Collectors.toMap(Qa::getQaId, q -> q));
+
+        for (var it : Optional.ofNullable(req.getQaList()).orElse(List.of())) {
+            Long oldQaId = it.getQaId();
+            String trans = Optional.ofNullable(it.getTransContent()).orElse("").trim();
+            if (oldQaId == null || trans.isBlank()) continue;
+
+            Qa old = qaMap.get(oldQaId);
+            if (old == null) {
+                // 방어: 같은 Post 소속 재확인
+                old = qaRepository.findByIdAndPostId(oldQaId, post.getPostId()).orElse(null);
+            }
+            if (old == null) continue;
+
+            Long order = old.getQaOrder();
+            String question = old.getQaQuestion();
+
+            // 1) 유니크 제약 회피: old를 임시 order로 이동
+            long tempOrder = -order; // 또는 큰 숫자
+            old.setQaOrder(tempOrder);
+            qaRepository.save(old);
+            qaRepository.flush(); // DB에 확정
+
+            // 2) 새 QA 생성(원래 order/같은 질문/새 답변)
+            Qa fresh = Qa.builder()
+                    .post(post)
+                    .qaOrder(order)
+                    .qaQuestion(question)
+                    .qaAnswer(trans.length() > 500 ? trans.substring(0, 500) : trans)
+                    .build();
+            qaRepository.save(fresh);
+            qaRepository.flush(); // fresh.qaId 확보
+
+            // 3) 모든 Transcription FK를 fresh로 치환(전역)
+            transcriptionRepository.reassignAllQa(oldQaId, fresh.getQaId());
+            // (옵션) 안전 확인
+            if (transcriptionRepository.existsByQa_QaId(oldQaId)) {
+                throw new IllegalStateException("FK 치환 실패: 여전히 oldQaId를 참조하는 행이 있습니다. oldQaId=" + oldQaId);
+            }
+
+            // 4) old QA 삭제 (이 시점이면 FK 없음 → ORA-02292 발생 X)
+            qaRepository.deleteById(oldQaId);
+            qaRepository.flush();
+        }
+
+        // 최종 목록 반환(qaOrder asc)
+        return qaRepository.findAllByPostIdOrderByQaOrder(post.getPostId());
+    }
+
+
+
+    @Transactional
+    public boolean end(Long simulationId, Long qaCount) {
+        Simulation simul =  simulationRepository.findBySimulationId(simulationId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 시뮬이 존재하지 않습니다."));
+
+        Post post = postRepository.findById(simul.getPost().getPostId())
+                .orElseThrow(() -> new IllegalArgumentException("해당 게시물이 존재하지 않습니다."));
+
+        if(post.getQaList().size() != qaCount){
+            transcriptionRepository.deleteAllBySimulation(simul);
+            simulationRepository.deleteById(simulationId);
+            return false;
+        }
+
+        simul.setSimulationQACount(qaCount);
+        simul.setSimulationCompletedAt(LocalDateTime.now());
+        simul.setSimulationStatus("SUCCESS");
+
+        return true;
     }
 
     @Transactional
-    public void finalizeToPost(SimulationResultDto result) {
-        Long postId = result.getPost().getPostId();
-
-        // Post 및 QA 엔티티 로드
-        Post post = postRepository.findByIdFetchQa(postId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 Post가 존재하지 않습니다."));
-
-        // qaList 순회하며 transContent -> qaAnswer로 덮어쓰기
-        for (QaDto qaDto : result.getPost().getQaList()) {
-            post.getQaList().stream()
-                    .filter(q -> q.getQaId().equals(qaDto.getQaId()))
-                    .findFirst()
-                    .ifPresent(q -> {
-                        if (qaDto.getTransContent() != null && !qaDto.getTransContent().isBlank()) {
-                            q.setQaAnswer(qaDto.getTransContent().trim());
-                        }
-                    });
+    public void deleteAllByUserId(Long userId) {
+        List<Simulation> simulations = simulationRepository.findAllByUser_UserId(userId);
+        for (Simulation sim : simulations) {
+            transcriptionRepository.deleteAllBySimulation_SimulationId(sim.getSimulationId());
+            simulationRepository.deleteById(sim.getSimulationId());
         }
+    }
 
-        // 상태 갱신 등 필요 시 추가
-        // post.setStatus("FINALIZED");
-
-        postRepository.save(post);
+    public boolean transCheck(Long simulationId) {
+        int i = 0;
+        Simulation simulation = simulationRepository.findById(simulationId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 시뮬이 존재하지 않습니다."));
+        while (i < 12){
+            long trCount = transcriptionRepository.countBySimulation(simulation);
+            if(simulation.getSimulationQACount().equals(trCount)){
+                return true;
+            }
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+        return false;
     }
 }

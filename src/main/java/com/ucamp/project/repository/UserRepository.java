@@ -1,57 +1,57 @@
 package com.ucamp.project.repository;
 
+import com.ucamp.project.dto.RankResponse;
 import com.ucamp.project.dto.UserResponse;
 import com.ucamp.project.dto.UserWithCertDTO;
 import com.ucamp.project.dto.UserWithSimulDTO;
 import com.ucamp.project.model.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 //
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByUserId(Long userId);
 
-    @Query("""
+    @Query(value = """
         SELECT new com.ucamp.project.dto.UserResponse(
-                        u.userId,
-                        u.nickname,
-                        u.email,
-                        j.jobId,
-                        j.jobName,
-                        u.passStatus,
-                        u.createdAt,
-                        u.role,
-                        s.simulationStatus,
-                        s.simulationCompletedAt,
-                        c.certStatus,
-                        c.certReqDate,
-                        c.certTrmtDate,
-                        c.certFileUrl
-                    )
-                    FROM User u
-                    LEFT JOIN u.job j
-                    LEFT JOIN Certificate c\s
-                        ON c.certReqDate = (
-                            SELECT MAX(c2.certReqDate)
-                            FROM Certificate c2
-                            WHERE c2.user.userId = u.userId
-                        )
-                    LEFT JOIN Simulation s\s
-                        ON s.simulationCompletedAt = (
-                            SELECT MAX(s2.simulationCompletedAt)
-                            FROM Simulation s2
-                            WHERE s2.user.userId = u.userId
-                        )
-                    ORDER BY c.certReqDate ASC, u.createdAt DESC
+            u.userId,
+            u.nickname,
+            u.email,
+            j.jobId,
+            j.jobName,
+            u.passStatus,
+            u.createdAt,
+            u.role,
+            s.simulationStatus,
+            s.simulationCompletedAt,
+            c.certStatus,
+            c.certReqDate,
+            c.certTrmtDate,
+            c.certFileUrl
+        )
+        FROM User u
+        LEFT JOIN u.job j
+        LEFT JOIN Certificate c ON c.certReqDate = (
+            SELECT MAX(c2.certReqDate)
+            FROM Certificate c2
+            WHERE c2.user.userId = u.userId
+        )
+        LEFT JOIN Simulation s ON s.simulationCompletedAt = (
+            SELECT MAX(s2.simulationCompletedAt)
+            FROM Simulation s2
+            WHERE s2.user.userId = u.userId
+        )
+        ORDER BY u.createdAt DESC
     """)
-    List<UserResponse> findAllWithCertAndSimulInfo();
+    Page<UserResponse> findAllWithCertAndSimulInfo(Pageable pageable);
 
     @Query("""
     SELECT new com.ucamp.project.dto.UserWithCertDTO(
@@ -78,31 +78,71 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query(value = """
         SELECT
             p.post_title AS title,
-            u.nickname AS nickname,
-            u.email AS email,
+            u.nickname   AS nickname,
+            u.email      AS email,
             TO_CHAR(s1.simulation_completed_at,'YYYY-MM-DD HH24:MI:SS') AS completed_at,
             CASE
                 WHEN s1.simulation_qa_count <= COALESCE(s2.tr_count, 0) THEN 'SUCCESS'
                 ELSE 'INPROGRESS'
             END AS status
-        FROM
-            simulation s1
-        INNER JOIN
-            users u ON s1.user_id = u.user_id
-        INNER JOIN
-            post p ON s1.post_id = p.post_id
-        LEFT JOIN
-            (
-                SELECT 
-                    t.simulation_id, 
-                    COUNT(*) AS tr_count
-                FROM 
-                    transcription t
-                GROUP BY 
-                    t.simulation_id
-            ) s2 ON s1.simulation_id = s2.simulation_id
-        """, nativeQuery = true)
-    List<UserWithSimulDTO> findAllTranscriptionStatus();
+        FROM simulation s1
+        INNER JOIN users u ON s1.user_id = u.user_id
+        INNER JOIN post  p ON s1.post_id = p.post_id
+        LEFT JOIN (
+            SELECT t.simulation_id, COUNT(*) AS tr_count
+            FROM transcription t
+            GROUP BY t.simulation_id
+        ) s2 ON s1.simulation_id = s2.simulation_id
+        ORDER BY s1.simulation_completed_at DESC
+        """,
+            countQuery = """
+        SELECT COUNT(1)
+        FROM simulation s1
+        INNER JOIN users u ON s1.user_id = u.user_id
+        INNER JOIN post  p ON s1.post_id = p.post_id
+        """,
+            nativeQuery = true)
+    Page<UserWithSimulDTO> findAllTranscriptionStatus(Pageable pageable);
     boolean existsByNicknameIgnoreCase(String nickname);
     Optional<User> findByNicknameIgnoreCase(String nickname);
+
+    @Query(value = """
+            SELECT
+                u.user_id AS userId,
+                u.nickname AS nickname,
+                u.pass_status AS passStatus,
+                u.users_profile_image_url AS usersProfileImageUrl,
+                j.job_name AS jobName,
+                COALESCE(SUM(p.post_import_count),0) AS cnt
+            FROM users u
+            JOIN job j ON u.job_id = j.job_id
+            JOIN post p ON u.user_id = p.user_id
+            GROUP BY u.user_id, u.nickname, u.pass_status, u.users_profile_image_url, j.job_name
+            ORDER BY cnt DESC
+            """, nativeQuery = true)
+    List<Object[]> findAllBookmark();
+
+///
+    @Query(value = """
+            SELECT
+                u.user_id AS userId,
+                 u.nickname AS nickname,
+                 u.pass_status AS passStatus,
+                 u.users_profile_image_url AS usersProfileImageUrl,
+                 j.job_name AS jobName,
+                 COUNT(s.simulation_id) AS cnt
+             FROM users u
+             JOIN job j ON u.job_id = j.job_id
+             JOIN simulation s ON s.user_id = u.user_id
+             WHERE s.simulation_status = 'SUCCESS'
+             AND (
+                 (:period = 'thisweek' AND s.simulation_completed_at BETWEEN TRUNC(SYSDATE, 'D') AND TRUNC(SYSDATE, 'D') + 7) OR
+                 (:period = 'thismonth' AND s.simulation_completed_at BETWEEN TRUNC(SYSDATE, 'MM') AND ADD_MONTHS(TRUNC(SYSDATE, 'MM'), 1)) OR
+                 (:period NOT IN ('thisweek', 'thismonth'))
+             )
+             GROUP BY u.user_id, u.nickname, u.pass_status, u.users_profile_image_url, j.job_name
+             ORDER BY cnt DESC
+            """, nativeQuery = true)
+    List<Object[]> findAllPractice(String period);
+
 }

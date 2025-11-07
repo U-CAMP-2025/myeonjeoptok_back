@@ -1,25 +1,29 @@
 package com.ucamp.project.controller;
 
 import com.ucamp.project.dto.ApiResponse;
+import com.ucamp.project.dto.FinalizeRequest;
+import com.ucamp.project.dto.QaDto;
 import com.ucamp.project.dto.SimulationDetailResponse;
-import com.ucamp.project.dto.SimulationResultDto;
 import com.ucamp.project.model.Simulation;
 import com.ucamp.project.model.Transcription;
 import com.ucamp.project.model.User;
 import com.ucamp.project.service.*;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Path;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/simulation")
+@Slf4j
 public class SimulationController {
 
     private final PostService postService;
@@ -29,6 +33,8 @@ public class SimulationController {
     private final SimulationQueryService simulationQueryService;
     private final SimulationRecordService simulationRecordService;
     private final TranscriptionService transcriptionService;
+    private final AiFeedbackService aiFeedbackService;
+
     @GetMapping
     public ApiResponse<Object> getPost(@AuthenticationPrincipal User user) {
         // 비로그인 사용자 요청 예외
@@ -75,7 +81,7 @@ public class SimulationController {
 
     @GetMapping("/{id}/start")
     public ApiResponse<Object> getSimulation(@PathVariable Long id) {
-        SimulationDetailResponse data = simulationService.findDetail(id);
+        SimulationDetailResponse data = simulationService.findStart(id);
         ApiResponse<Object> resp = ApiResponse.builder()
                 .code(200)
                 .message("success")
@@ -93,19 +99,43 @@ public class SimulationController {
         // 1) 임시 저장
         Path saved = tempFileService.saveToTemp(file, "sim" + simulationId + "_q" + qaId);
 
-        // 2) STT 호출
+        // 2) STT
         String transcript = sttService.transcribe(saved);
 
-        Transcription savedTr = transcriptionService.upsert(simulationId, qaId, transcript);
+        // 3) Transcription upsert
+        Transcription tr = transcriptionService.upsert(simulationId, qaId, transcript);
 
-        // 3) 응답 (url은 필요시 파일 서버나 S3 업로드 후 세팅)
+        // 2) 질문 조회 (서비스에서 상세 불러와 qaId 매칭)
+        String question = null;
+        try {
+            var detail = simulationService.findDetail(simulationId);
+            question = detail.getPost().getQaList().stream()
+                    .filter(q -> qaId.equals(q.getQaId()))
+                    .findFirst()
+                    .map(q -> q.getQaQuestion())
+                    .orElse(null);
+        } catch (Exception e) {
+            log.warn("질문 조회 실패 simId={}, qaId={}", simulationId, qaId, e);
+        }
+
+// 3) 피드백 생성 & 저장
+        String feedback = "";
+        if (question != null && !question.isBlank()) {
+            feedback = aiFeedbackService.generateFeedback(question, transcript); // 위 서비스 사용
+        }
+        if (feedback != null && !feedback.isBlank()) {
+            transcriptionService.updateFeedback(tr.getTrId(), feedback);
+        }
+
+        // 6) 프론트 응답
         Map<String, Object> data = new HashMap<>();
         data.put("simulationId", simulationId);
         data.put("qaId", qaId);
         data.put("originalName", file.getOriginalFilename());
         data.put("size", file.getSize());
         data.put("contentType", file.getContentType());
-        data.put("transcript", transcript); // ★ 프론트로 전사 텍스트 전달
+        data.put("transcript", transcript);
+        data.put("feedback", feedback);
 
         return ApiResponse.builder()
                 .code(200)
@@ -114,12 +144,14 @@ public class SimulationController {
                 .build();
     }
 
+
     @GetMapping("/{simulationId}/result")
     public ApiResponse<Object> getResult(@PathVariable Long simulationId,
                                          @AuthenticationPrincipal User user) {
         if (user == null) {
             return ApiResponse.builder().code(401).message("로그인이 필요합니다.").build();
         }
+
         // 본인 소유 검증
         var dto = simulationQueryService.buildResult(simulationId); // PostDto + QaDto(transContent 포함)
         return ApiResponse.builder()
@@ -143,25 +175,63 @@ public class SimulationController {
     }
 
     @PutMapping("/{simulationId}/finalize")
-    public ApiResponse<Object> finalizeSimulation(@PathVariable Long simulationId,
-                                                  @AuthenticationPrincipal User user) {
+    public ApiResponse<Object> finalizeSelection(
+            @PathVariable Long simulationId,
+            @AuthenticationPrincipal User user,
+            @RequestBody @Valid FinalizeRequest request
+    ) {
         if (user == null) {
             return ApiResponse.builder().code(401).message("로그인이 필요합니다.").build();
         }
-
         simulationService.ensureOwner(simulationId, user.getUserId());
 
-        // 여기서 buildResult()를 통해 최신 데이터 가져오기
-        SimulationResultDto result = simulationQueryService.buildResult(simulationId);
+        var finalList = simulationService.finalizeReplaceAndDelete(simulationId, request);
 
-        // 시뮬레이션 결과를 Post에 반영
-        simulationService.finalizeToPost(result);
+        var respQaList = finalList.stream().map(q ->
+                QaDto.builder()
+                        .qaId(q.getQaId())
+                        .qaOrder(q.getQaOrder())
+                        .qaQuestion(q.getQaQuestion())
+                        .qaAnswer(q.getQaAnswer())
+                        .build()
+        ).toList();
 
         return ApiResponse.builder()
                 .code(200)
                 .message("success")
-                .data("시뮬레이션 결과가 게시글에 저장되었습니다.")
+                .data(Map.of("qaList", respQaList))
                 .build();
     }
 
+    @PatchMapping("/{simulationId}/{qaCount}")
+    public ApiResponse<?> stopSimulation(@PathVariable Long simulationId, @PathVariable Long qaCount){
+
+        String message;
+
+        if(simulationService.end(simulationId,qaCount)){
+            message = "success";
+            log.info("SUCCESS");
+        } else {
+            message = "fail";
+            log.info("FAIL");
+        }
+
+        return ApiResponse.builder()
+                .code(200)
+                .message(message)
+                .data("ok")
+                .build();
+    }
+
+    @GetMapping("{simulationId}/transCheck")
+    public ApiResponse<?> transCheck(@PathVariable Long simulationId) {
+
+        boolean isOk = simulationService.transCheck(simulationId);
+
+        return ApiResponse.builder()
+                .code(200)
+                .message("success")
+                .data(isOk)
+                .build();
+    }
 }

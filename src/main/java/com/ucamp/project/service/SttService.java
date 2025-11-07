@@ -10,6 +10,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import javax.annotation.PostConstruct;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -20,32 +21,38 @@ public class SttService {
     @Value("${openai.apiKey}")
     private String apiKey;
 
-    // 최신 권장 STT 모델명 (Whisper 대체)
-    @Value("${OPENAI_STT_MODEL}")
+    @Value("${openai.baseUrl}")
+    private String baseUrl; // ex) https://api.openai.com/v1
+
+    @Value("${openai.sttModel}")
     private String sttModel;
 
     @Value("${openai.sttPrompt:}")
     private String sttPrompt;
 
-    private final WebClient webClient = WebClient.builder()
-            .baseUrl("https://api.openai.com")
-            .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + System.getenv("OPENAI_API_KEY"))
-            .build();
+    private WebClient webClient;
+
+    @PostConstruct
+    void init() {
+        // baseUrl이 /v1를 포함하므로 루트로 자름
+        String root = baseUrl.endsWith("/v1") ? baseUrl.substring(0, baseUrl.length()-3) : baseUrl;
+        this.webClient = WebClient.builder()
+                .baseUrl(root) // https://api.openai.com
+                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
+                .build();
+    }
 
     public String transcribe(Path audioPath) {
         try {
-            // 반드시 MultipartBodyBuilder 사용
-            org.springframework.util.MultiValueMap<String, HttpEntity<?>> body = buildMultipart(audioPath);
-
+            MultiValueMap<String, HttpEntity<?>> body = buildMultipart(audioPath);
             return webClient.post()
                     .uri("/v1/audio/transcriptions")
                     .contentType(MediaType.MULTIPART_FORM_DATA)
                     .body(BodyInserters.fromMultipartData(body))
                     .retrieve()
-                    // 에러 바디를 그대로 받아 디버깅
                     .onStatus(HttpStatusCode::isError, resp ->
-                            resp.bodyToMono(String.class).map(msg ->
-                                    new RuntimeException("OpenAI STT error " + resp.statusCode() + " :: " + msg))
+                            resp.bodyToMono(String.class)
+                                    .map(msg -> new RuntimeException("OpenAI STT error " + resp.statusCode() + " :: " + msg))
                     )
                     .bodyToMono(Map.class)
                     .map(map -> String.valueOf(map.getOrDefault("text", "")))
@@ -57,30 +64,18 @@ public class SttService {
 
     private MultiValueMap<String, HttpEntity<?>> buildMultipart(Path audioPath) {
         var builder = new org.springframework.http.client.MultipartBodyBuilder();
-
-        // 1) model
         builder.part("model", sttModel);
+        if (sttPrompt != null && !sttPrompt.isBlank()) builder.part("prompt", sttPrompt);
 
-        // 2) prompt(옵션)
-        if (sttPrompt != null && !sttPrompt.isBlank()) {
-            builder.part("prompt", sttPrompt);
-        }
-
-        // 3) language(옵션) — ko/en 혼용이면 생략 가능. 필요 시 아래 주석 해제
-        // builder.part("language", "ko");
-
-        // 4) file — 파일명과 content-type이 함께 가도록 FileSystemResource 사용
         FileSystemResource fs = new FileSystemResource(audioPath.toFile());
-        ContentDisposition cd = ContentDisposition
-                .formData()
+        ContentDisposition cd = ContentDisposition.formData()
                 .name("file")
                 .filename(fs.getFilename() != null ? fs.getFilename() : "audio.webm")
                 .build();
 
         HttpHeaders fh = new HttpHeaders();
         fh.setContentDisposition(cd);
-        // webm이면 audio/webm, wav면 audio/wav 등 적절히
-        fh.setContentType(MediaType.parseMediaType("audio/webm"));
+        fh.setContentType(MediaType.parseMediaType("audio/webm")); // 업로드 포맷에 맞게
 
         HttpEntity<FileSystemResource> fileEntity = new HttpEntity<>(fs, fh);
         builder.part("file", fileEntity);

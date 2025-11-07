@@ -36,6 +36,9 @@ public class Transcription {
     @JoinColumn(name = "qa_id")
     private Qa qa;
 
+    @Column(name = "feedback", length = 1000)
+    private String feedback;
+
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 

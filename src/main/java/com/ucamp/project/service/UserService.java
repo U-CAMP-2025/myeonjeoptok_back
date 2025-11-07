@@ -8,7 +8,12 @@ import com.ucamp.project.model.User;
 import com.ucamp.project.repository.JobRepository;
 import com.ucamp.project.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import org.springframework.transaction.annotation.Transactional;
+import java.util.Set;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -78,8 +83,8 @@ import java.util.NoSuchElementException;
                 .build();
     }
     //
-    public List<UserResponse> findAllWithCertAndSimulInfo() {
-        return userRepository.findAllWithCertAndSimulInfo();
+    public Page<UserResponse> findAllWithCertAndSimulInfo(Pageable pageable) {
+        return userRepository.findAllWithCertAndSimulInfo(pageable);
     }
 
     public List<UserWithCertDTO> findAllWithCert() { ;
@@ -100,5 +105,37 @@ import java.util.NoSuchElementException;
                 .status(user.getStatus())
                 .userProfileImageUrl(user.getUsersProfileImageUrl())
                 .build();
+    }
+
+    // user role 조회
+    public String findUserRoleByUserId(Long userId) {
+        User user = userRepository.findByUserId(userId)
+            .orElseThrow(() -> new RuntimeException("유저가 존재하지 않습니다."));
+        return user.getRole();
+    }
+
+    public String findUserStatusByUserId(Long userId) {
+        User user = userRepository.findByUserId(userId)
+             .orElseThrow(() -> new RuntimeException("유저가 존재하지 않습니다."));
+        return user.getStatus();
+    }
+
+    @Transactional
+    public String updateUserStatus(Long userId, String status) {
+        if (status == null || status.isBlank()) {
+            throw new IllegalArgumentException("유효하지 않은 status 값");
+        }
+        String normalized = status.trim().toUpperCase();
+        Set<String> allowed = Set.of("NEW", "ACTIVE", "DISABLED");
+        if (!allowed.contains(normalized)) {
+            throw new IllegalArgumentException("status는 NEW, ACTIVE, DISABLED 중 하나여야 합니다.");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("사용자를 찾을 수 없음"));
+
+        user.setStatus(normalized);
+        userRepository.save(user);
+        return user.getStatus();
     }
 }

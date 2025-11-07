@@ -33,15 +33,15 @@ public class SecurityConfig {
                         .authenticationEntryPoint((req, res, e) -> res.sendError(HttpServletResponse.SC_UNAUTHORIZED))
                         .accessDeniedHandler((req, res, e) -> res.sendError(HttpServletResponse.SC_FORBIDDEN)))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/", "/index.html").permitAll()
-                        .requestMatchers("/api/auth/**", "/api/jobs/**", "/h2-console/**", "/image/**","/api/simulation/**","/api/interviewers/**","/api/files/**", "/api/users/apply").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/posts/**").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/api/posts/**").authenticated()
-                        .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
+//                        .requestMatchers("/h2-console/**").permitAll() // h2사용시 주석해제
+                        .requestMatchers(HttpMethod.GET, "/api/auth/**").permitAll() // 카카오, 회원가입
+                        .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll() // 토큰 재발행
+                        .requestMatchers("/image/**").permitAll()
+                        .requestMatchers( "/api/jobs/**", "/api/rank/**", "/api/posts/search").permitAll() // 직무, 랭킹, 면접 연습 전체 조회
+                        .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN") // 어드민 페이지
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .anyRequest().authenticated())
+                        .anyRequest().hasAnyAuthority("ROLE_USER","ROLE_NEW","ROLE_ADMIN")) // 나머지
                 .addFilterBefore(new JwtAuthenticationFilter(tokenProvider), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

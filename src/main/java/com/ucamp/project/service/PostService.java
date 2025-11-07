@@ -30,6 +30,10 @@ public class PostService {
 
     private final UserRepository userRepository;
 
+    private final SimulationRepository simulationRepository;
+
+    private final TranscriptionRepository transcriptionRepository;
+
     public List<Post> findAll() {
         return postRepository.findAll();
     }
@@ -39,11 +43,7 @@ public class PostService {
         List<SimualtionPostResponse> resp = new ArrayList<>();
         for (Post post : posts) {
             System.out.println("test : " + post.getPostId());
-            resp.add(SimualtionPostResponse.builder()
-                    .postId(post.getPostId())
-                    .title(post.getPostTitle())
-                    .job(postJobRepository.findByPostId(post.getPostId()))
-                    .build());
+            resp.add(SimualtionPostResponse.builder().postId(post.getPostId()).title(post.getPostTitle()).job(postJobRepository.findByPostId(post.getPostId())).build());
         }
         return resp;
     }
@@ -55,17 +55,7 @@ public class PostService {
             System.out.println("test : " + post);
 
 
-            resp.add(PostResponseDTO.builder()
-                    .postId(post.getPostId())
-                    .nickname(post.getUser().getNickname())
-                    .otherWriter(post.getPostOtherWriter() == null ? null : post.getPostOtherWriter().getNickname())
-                    .job(postJobRepository.findByPostId(post.getPostId()))
-                    .title(post.getPostTitle())
-                    .description(post.getPostDescription())
-                    .bookCount(post.getCount())
-                    .review(reviewRepository.findByPostPostId(post.getPostId()).toArray().length)
-                    .createAt(post.getPostUpdatedAt() == null ? post.getPostCreatedAt() : post.getPostUpdatedAt())
-                    .build());
+            resp.add(PostResponseDTO.builder().postId(post.getPostId()).nickname(post.getUser().getNickname()).otherWriter(post.getPostOtherWriter() == null ? null : post.getPostOtherWriter().getNickname()).job(postJobRepository.findByPostId(post.getPostId())).title(post.getPostTitle()).description(post.getPostDescription()).bookCount(post.getCount()).review(reviewRepository.findByPostPostId(post.getPostId()).toArray().length).createAt(post.getPostUpdatedAt() == null ? post.getPostCreatedAt() : post.getPostUpdatedAt()).build());
         }
         return resp;
     }
@@ -80,23 +70,14 @@ public class PostService {
         }
 
         //포스트 생성
-        Post post = Post.builder()
-                .postTitle(req.getTitle())
-                .user(user)
-                .postDescription(req.getSummary())
-                .postStatus(req.getStatus())
-                .postOtherWriter(null)
-                .build();
+        Post post = Post.builder().postTitle(req.getTitle()).user(user).postDescription(req.getSummary()).postStatus(req.getStatus()).postOtherWriter(null).build();
 
 //         PostID 값 받아오기
         Post postRecive = postRepository.save(post);
 
         for (Long jobId : req.getJobIds()) {
 
-            PostJobId job = PostJobId.builder()
-                    .post(postRecive)
-                    .job(jobRepository.findById(jobId).get())
-                    .build();
+            PostJobId job = PostJobId.builder().post(postRecive).job(jobRepository.findById(jobId).get()).build();
             PostJob pJob = PostJob.builder().postJobId(job).build();
             postJobRepository.save(pJob);
         }
@@ -108,12 +89,7 @@ public class PostService {
             if (count++ >= 10) {
                 break;
             }
-            Qa qa = Qa.builder()
-                    .post(postRecive)
-                    .qaQuestion(qaSet.getQuestion())
-                    .qaAnswer(qaSet.getAnswer())
-                    .qaOrder(count++)
-                    .build();
+            Qa qa = Qa.builder().post(postRecive).qaQuestion(qaSet.getQuestion()).qaAnswer(qaSet.getAnswer()).qaOrder(count++).build();
             Qas.add(qa);
         }
         postRecive.setQaList(Qas);
@@ -123,16 +99,9 @@ public class PostService {
 
     @Transactional
     public PostResponseDTO findById(Long postId, User user) {
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 포스트 아이디 입니다."));
+        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("존재하지 않는 포스트 아이디 입니다."));
 
-        List<PostCreateRequestDTO.QaSet> qaDtoList = post.getQaList().stream()
-                .map(qa -> PostCreateRequestDTO.QaSet.builder()
-                        .qaId(qa.getQaId())
-                        .question(qa.getQaQuestion())
-                        .answer(qa.getQaAnswer())
-                        .build())
-                .toList();
+        List<PostCreateRequestDTO.QaSet> qaDtoList = post.getQaList().stream().map(qa -> PostCreateRequestDTO.QaSet.builder().qaId(qa.getQaId()).question(qa.getQaQuestion()).answer(qa.getQaAnswer()).build()).toList();
 
         boolean isMe = post.getUser().getUserId().equals(user.getUserId());
         boolean isPublic = post.getPostStatus().equals("N");
@@ -141,20 +110,7 @@ public class PostService {
             throw new RuntimeException("비공개 질문셋입니다");
         }
 
-        return PostResponseDTO.builder()
-                .postId(post.getPostId())
-                .job(postJobRepository.findByPostId(post.getPostId()))
-                .jobIds(postJobRepository.findByJobId(post.getPostId()))
-                .title(post.getPostTitle())
-                .nickname(post.getUser().getNickname())
-                .description(post.getPostDescription())
-                .createAt(post.getPostUpdatedAt() == null ? post.getPostCreatedAt() : post.getPostUpdatedAt())
-                .isPassed(post.getUser().getPassStatus() != null)
-                .isPublic(!isPublic)
-                .isMe(isMe)
-                .otherWriter(post.getPostOtherWriter() == null ? null : post.getPostOtherWriter().getNickname())
-                .qa(qaDtoList)
-                .build();
+        return PostResponseDTO.builder().postId(post.getPostId()).job(postJobRepository.findByPostId(post.getPostId())).jobIds(postJobRepository.findByJobId(post.getPostId())).title(post.getPostTitle()).nickname(post.getUser().getNickname()).description(post.getPostDescription()).createAt(post.getPostUpdatedAt() == null ? post.getPostCreatedAt() : post.getPostUpdatedAt()).isPassed(post.getUser().getPassStatus() != null).isPublic(!isPublic).isMe(isMe).otherWriter(post.getPostOtherWriter() == null ? null : post.getPostOtherWriter().getNickname()).qa(qaDtoList).build();
 
 
     }
@@ -163,8 +119,7 @@ public class PostService {
     public Long updatePost(Long postId, PostCreateRequestDTO req, User user) {
 
         // 질문셋 조회
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 질문셋입니다."));
+        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("존재하지 않는 질문셋입니다."));
 
         // 유저 체크
         if (!user.getUserId().equals(post.getUser().getUserId())) {
@@ -180,10 +135,7 @@ public class PostService {
         // JOB 갱신 -> 삭제후 재 기입
         postJobRepository.deleteAllByPost(post);
         for (Long jobId : req.getJobIds()) {
-            PostJobId jobIdObj = PostJobId.builder()
-                    .post(post)
-                    .job(jobRepository.findById(jobId).get())
-                    .build();
+            PostJobId jobIdObj = PostJobId.builder().post(post).job(jobRepository.findById(jobId).get()).build();
             PostJob pJob = PostJob.builder().postJobId(jobIdObj).build();
             postJobRepository.save(pJob);
         }
@@ -191,14 +143,29 @@ public class PostService {
         // QA 처리
         List<Qa> qaList = post.getQaList();
 
-        // 요청에 없는 QA 제거
+        // 1. 삭제할 QaId 목록을 수집합니다.
         List<Long> incomingQaIds = new ArrayList<>();
         for (PostCreateRequestDTO.QaSet qaSet : req.getQaSets()) {
+            log.info("TTTTTEST : " + qaSet.getQaId());
             if (qaSet.getQaId() != null) {
                 incomingQaIds.add(qaSet.getQaId());
             }
         }
-        qaList.removeIf(qa -> qa.getQaId() != null && !incomingQaIds.contains(qa.getQaId()));
+
+        for (Iterator<Qa> iterator = qaList.iterator(); iterator.hasNext();) {
+            Qa qa = iterator.next();
+
+            // 요청에 없는 qaId를 처리
+            if (qa.getQaId() != null && !incomingQaIds.contains(qa.getQaId())) {
+
+                // 요청에 없는 qaId에 해당하는 transcription 삭제
+                transcriptionRepository.deleteAllByQaQaId(qa.getQaId());
+
+                // qaList에서 요청에 없는 qaId를 가진 항목 제거
+                iterator.remove();
+            }
+        }
+
 
         long count = 1;
         for (PostCreateRequestDTO.QaSet qaSet : req.getQaSets()) {
@@ -221,12 +188,7 @@ public class PostService {
                 updateQa.setQaOrder(count++);
             } else {
                 // 새 QA 추가
-                Qa qa = Qa.builder()
-                        .post(post)
-                        .qaQuestion(qaSet.getQuestion())
-                        .qaAnswer(qaSet.getAnswer())
-                        .qaOrder(count++)
-                        .build();
+                Qa qa = Qa.builder().post(post).qaQuestion(qaSet.getQuestion()).qaAnswer(qaSet.getAnswer()).qaOrder(count++).build();
                 qaList.add(qa);
             }
         }
@@ -236,12 +198,18 @@ public class PostService {
 
     @Transactional
     public Long deletePost(User user, Long postId) {
-        Post post = postRepository.findByUserUserIdAndPostId(user.getUserId(), postId)
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 질문셋입니다."));
+        Post post = postRepository.findByUserUserIdAndPostId(user.getUserId(), postId).orElseThrow(() -> new RuntimeException("존재하지 않는 질문셋입니다."));
 
         postJobRepository.deleteAllByPost(post);
 
         reviewRepository.deleteAllByPost(post);
+
+        List<Simulation> sims = simulationRepository.findByPost(post);
+
+        for (Simulation sim : sims) {
+            transcriptionRepository.deleteBySimulation(sim);
+            simulationRepository.deleteById(sim.getSimulationId());
+        }
 
         postRepository.delete(post);
 
@@ -284,23 +252,7 @@ public class PostService {
             rawPage = postRepository.findPostsWithJoins(jobIds, pageable);
         }
 
-        List<PostResponseDTO> dtoList = rawPage.stream()
-                .map(obj ->
-                        PostResponseDTO.builder()
-                                .postId(((Number) obj[0]).longValue())
-                                .nickname((String) obj[1])
-                                .job(obj[2] != null && !((String) obj[2]).isEmpty()
-                                        ? List.of(((String) obj[2]).split(","))
-                                        : List.of())
-                                .title((String) obj[3])
-                                .description((String) obj[4])
-                                .bookCount(((Number) obj[5]).longValue())
-                                .review(((Number) obj[6]).intValue())
-                                .createAt(((java.sql.Timestamp) obj[7]).toLocalDateTime())
-                                .isPublic(((Number) obj[8]).intValue() == 1)
-                                .isPassed(((Number) obj[9]).intValue() == 1)
-                                .build())
-                .toList();
+        List<PostResponseDTO> dtoList = rawPage.stream().map(obj -> PostResponseDTO.builder().postId(((Number) obj[0]).longValue()).nickname((String) obj[1]).job(obj[2] != null && !((String) obj[2]).isEmpty() ? List.of(((String) obj[2]).split(",")) : List.of()).title((String) obj[3]).description((String) obj[4]).bookCount(((Number) obj[5]).longValue()).review(((Number) obj[6]).intValue()).createAt(((java.sql.Timestamp) obj[7]).toLocalDateTime()).isPublic(((Number) obj[8]).intValue() == 1).isPassed(((Number) obj[9]).intValue() == 1).build()).toList();
 
         for (PostResponseDTO resp : dtoList) {
             log.info("TEST : " + resp);
@@ -319,19 +271,12 @@ public class PostService {
         }
 
         // 원본 Post 조회
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 질문셋입니다."));
+        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("존재하지 않는 질문셋입니다."));
 
-        post.setCount(post.getCount()+1);
+        post.setCount(post.getCount() + 1);
 
         // 원본 POST 복사
-        Post copiedPost = Post.builder()
-                .postTitle(post.getPostTitle())
-                .postDescription(post.getPostDescription())
-                .user(user)
-                .postOtherWriter(post.getUser())
-                .postStatus("N")
-                .build();
+        Post copiedPost = Post.builder().postTitle(post.getPostTitle()).postDescription(post.getPostDescription()).user(user).postOtherWriter(post.getUser()).postStatus("N").build();
 
         // POST 생성
         Post postRecive = postRepository.save(copiedPost);
@@ -342,10 +287,7 @@ public class PostService {
         // JOB 생성
         for (Long jobId : jobs) {
 
-            PostJobId job = PostJobId.builder()
-                    .post(postRecive)
-                    .job(jobRepository.findById(jobId).get())
-                    .build();
+            PostJobId job = PostJobId.builder().post(postRecive).job(jobRepository.findById(jobId).get()).build();
             PostJob pJob = PostJob.builder().postJobId(job).build();
             postJobRepository.save(pJob);
         }
@@ -354,18 +296,16 @@ public class PostService {
         List<Qa> copiedQas = new ArrayList<>();
 
         for (Qa qa : post.getQaList()) {
-            Qa newQa = Qa.builder()
-                    .post(postRecive)
-                    .qaId(null)
-                    .qaQuestion(qa.getQaQuestion())
-                    .qaAnswer(qa.getQaAnswer())
-                    .qaOrder(qa.getQaOrder())
-                    .build();
+            Qa newQa = Qa.builder().post(postRecive).qaId(null).qaQuestion(qa.getQaQuestion()).qaAnswer(qa.getQaAnswer()).qaOrder(qa.getQaOrder()).build();
             copiedQas.add(newQa);
         }
         // QA 생성
         postRecive.setQaList(copiedQas);
 
         return postRecive.getPostId();
+    }
+
+    public int postCount(User user) {
+        return postRepository.countByUser(user);
     }
 }

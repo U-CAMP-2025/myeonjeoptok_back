@@ -3,6 +3,7 @@ package com.ucamp.project.service;
 import com.ucamp.project.model.Qa;
 import com.ucamp.project.model.Simulation;
 import com.ucamp.project.model.Transcription;
+import com.ucamp.project.repository.SimulationRepository;
 import com.ucamp.project.repository.TranscriptionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TranscriptionService {
     private final TranscriptionRepository transcriptionRepository;
+    private final SimulationRepository simulationRepository;
 
     @Transactional
     public Transcription upsert(Long simulationId, Long qaId, String text) {
@@ -31,5 +33,15 @@ public class TranscriptionService {
     @Transactional(readOnly = true)
     public List<Transcription> findAllBySimulation(Long simulationId) {
         return transcriptionRepository.findAllBySimulation_SimulationId(simulationId);
+    }
+    @Transactional
+    public void updateFeedback(Long trId, String feedback) {
+        transcriptionRepository.findById(trId).ifPresent(tr -> {
+            // 컬럼 길이 방어 (DDL이 1000이면 동일하게 컷)
+            String safe = feedback == null ? "" : feedback;
+            if (safe.length() > 1000) safe = safe.substring(0, 1000);
+            tr.setFeedback(safe);
+            transcriptionRepository.save(tr);
+        });
     }
 }

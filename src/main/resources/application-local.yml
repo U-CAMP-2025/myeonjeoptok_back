@@ -7,8 +7,8 @@ spring:
 #    url: jdbc:h2:mem:ucamp;MODE=Oracle;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     url: jdbc:oracle:thin:@localhost:1521:XE
     driver-class-name: oracle.jdbc.OracleDriver
-    username: SCOTT
-    password: TIGER
+    username: system
+    password: ucamp
 
   h2:
     console:
@@ -50,6 +50,10 @@ odcloud:
   api:
     key: "${ODCLOUD_API_KEY}"
 
+vision:
+  projectId: "${VISION_PROJECT_ID}"
+  secretId: "${VISION_SECRET_ID}"
+
 openai:
   apiKey: ${OPENAI_API_KEY}   # 또는 평문 키(로컬 테스트용)
   baseUrl: https://api.openai.com/v1
@@ -83,3 +87,23 @@ openai:
     언어는 한국어와 영어가 혼용될 수 있습니다.
     영어 발음이나 약어를 한글로 말한 경우도 원어로 복원해 주세요.
     예: 도커 → Docker, 쿠버네티스 → Kubernetes, 레디스 → Redis.
+  feedback:
+    model: gpt-4o-mini
+    maxLen: 1000         # DB 컬럼 길이와 동일/이하로
+    temperature: 0.3
+    prompt: >
+      [지시사항]
+      - 아래 형식을 그대로 사용해 하나의 문자열로 출력.
+      - 각 항목은 줄바꿈만 사용. 마크다운/불릿 외 포맷 금지.
+      - '좋았던 점' 3줄, '아쉬웠던 점' 3줄, '추천 답변'은 500자 이내.
+      
+      좋았던 점:
+      1) ...
+      2) ...
+      3) ...
+      아쉬웠던 점:
+      1) ...
+      2) ...
+      3) ...
+      추천 답변(≤500자):
+      ...

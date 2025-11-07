@@ -35,7 +35,6 @@ public class UserController {
 
     @GetMapping("/all")
     public List<UserResponse> getAll() {
-        log.info("ㅁㄴㅇㄹㅇㅁㄴㄹ");
         return userService.findAll();
     }
 
@@ -80,4 +79,24 @@ public class UserController {
     }
 
 
+    @GetMapping("/role")
+    public ResponseEntity<Map<String, Object>> getRole() {
+        Long uid = getCurrentUserId();
+        String role = userService.findUserRoleByUserId(uid);
+        return ResponseEntity.ok(Map.of("role", role));
+    }
+
+    @GetMapping("/status")
+    public ResponseEntity<Map<String, Object>> getStatus() {
+        Long uid = getCurrentUserId();
+        String status = userService.findUserStatusByUserId(uid);
+        return ResponseEntity.ok(Map.of("userId", uid, "status", status));
+    }
+
+    @PatchMapping("/status")
+    public ResponseEntity<Map<String, Object>> updateStatus(@RequestBody Map<String, String> body) {
+        Long uid = getCurrentUserId();
+        String updated = userService.updateUserStatus(uid, body.get("status"));
+        return ResponseEntity.ok(Map.of("status", updated));
+    }
 }
