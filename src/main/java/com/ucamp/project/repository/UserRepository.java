@@ -82,7 +82,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
             u.email      AS email,
             TO_CHAR(s1.simulation_completed_at,'YYYY-MM-DD HH24:MI:SS') AS completed_at,
             CASE
-                WHEN s1.simulation_qa_count <= COALESCE(s2.tr_count, 0) THEN 'SUCCESS'
+                WHEN s1.simulation_qa_count >= COALESCE(s2.tr_count, 0) THEN 'SUCCESS'
                 ELSE 'INPROGRESS'
             END AS status
         FROM simulation s1
