@@ -28,23 +28,25 @@ public class SimulationRecordService {
         // 1) 로그인 사용자의 전체 시뮬레이션 조회
         List<Simulation> sims = simulationService.findByUserId(userId);
 
+        // ✅ 완료된 시뮬레이션만 필터링 (SUCCESS 상태만)
+        List<Simulation> completedSims = sims.stream()
+                .filter(sim -> "SUCCESS".equalsIgnoreCase(sim.getSimulationStatus()))
+                .collect(Collectors.toList());
+
         // 2) Post 기준 그룹핑
-        Map<Long, List<Simulation>> groupedByPost = sims.stream()
+        Map<Long, List<Simulation>> groupedByPost = completedSims.stream()
                 .collect(Collectors.groupingBy(sim -> sim.getPost().getPostId()));
 
-        // 3) 그룹별로 집계하여 DTO 생성
-        List<SimulationRecordItemDto> items = groupedByPost.entrySet().stream()
+        // 3) 그룹별로 DTO 생성
+        return groupedByPost.entrySet().stream()
                 .map(entry -> {
                     Long postId = entry.getKey();
                     List<Simulation> group = entry.getValue();
 
-                    // 직무 태그
                     List<String> jobs = postJobRepository.findByPostId(postId);
 
-                    // 동일 Post 반복 횟수(시도 수)
-                    long repetitionCount = group.size();
+                    long repetitionCount = group.size(); // ✅ 완료된 것만 카운트
 
-                    // 최신 완료(완료 일시가 있는 것 중 최댓값)
                     Optional<Simulation> latestCompletedOpt = group.stream()
                             .filter(g -> g.getSimulationCompletedAt() != null)
                             .max(Comparator.comparing(Simulation::getSimulationCompletedAt));
@@ -53,9 +55,6 @@ public class SimulationRecordService {
                             .map(Simulation::getSimulationCompletedAt)
                             .orElse(null);
 
-                    // 대표 시뮬레이션:
-                    //  - 최신 완료가 있으면 그 시뮬레이션
-                    //  - 없으면 simulationCreatedAt 기준 최신
                     Simulation representative = latestCompletedOpt.orElseGet(() ->
                             group.stream()
                                     .max(Comparator.comparing(Simulation::getSimulationCreatedAt))
@@ -63,10 +62,10 @@ public class SimulationRecordService {
                     );
 
                     return SimulationRecordItemDto.builder()
-                            .simulationId(representative.getSimulationId())             // 결과 링크용 대표 simId
-                            .simulationStatus(representative.getSimulationStatus())     // 대표 상태(INPROGRESS/COMPLETED)
-                            .completedAt(latestCompletedAt)                              // 최신 완료 일시(없으면 null)
-                            .count(repetitionCount)                                      // 동일 Post 총 시도 수
+                            .simulationId(representative.getSimulationId())
+                            .simulationStatus(representative.getSimulationStatus())
+                            .completedAt(latestCompletedAt)
+                            .count(repetitionCount)
                             .post(SimulationRecordItemDto.PostBrief.builder()
                                     .postId(postId)
                                     .title(representative.getPost().getPostTitle())
@@ -74,7 +73,6 @@ public class SimulationRecordService {
                                     .build())
                             .build();
                 })
-                // 정렬: 최신 완료일 내림차순, 없으면 생성일 최신 우선
                 .sorted((a, b) -> {
                     LocalDateTime aKey = a.getCompletedAt();
                     LocalDateTime bKey = b.getCompletedAt();
@@ -84,8 +82,5 @@ public class SimulationRecordService {
                     return bKey.compareTo(aKey);
                 })
                 .collect(Collectors.toList());
-
-        return items;
     }
-
 }
