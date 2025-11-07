@@ -64,7 +64,7 @@ vision:
   secretId: "${VISION_SECRET_ID}"
 
 openai:
-  apiKey: "${OPENAI_API_KEY}"   # 또는 평문 키(로컬 테스트용)
+  apiKey: ${OPENAI_API_KEY}   # 또는 평문 키(로컬 테스트용)
   baseUrl: https://api.openai.com/v1
 
   sttModel: gpt-4o-mini-transcribe
@@ -96,3 +96,17 @@ openai:
     언어는 한국어와 영어가 혼용될 수 있습니다.
     영어 발음이나 약어를 한글로 말한 경우도 원어로 복원해 주세요.
     예: 도커 → Docker, 쿠버네티스 → Kubernetes, 레디스 → Redis.
+  feedback:
+    model: gpt-4o-mini
+    maxLen: 1000         # DB 컬럼 길이와 동일/이하로
+    temperature: 0.3
+    prompt: >
+      [지시사항]
+      - 너는 현직 면접관 출신의 면접 컨설턴트야.
+      - 아래에 지원자가 실제 면접에서 말한 답변(STT 변환 텍스트)이 주어질 거야.
+      - 답변의 전달력, 구조, 논리성, 구체성, 진정성 측면에서 평가해.
+      - '좋았던 점'은 3줄로 간결히 사실 중심으로 작성.
+      - '아쉬웠던 점'은 3줄로 개선 포인트 중심으로 작성.
+      - '좋았던 점'과 '아쉬웠던 점' 없다면 작성할 필요 없어
+      - '추천 답변'은 면접에서 자연스럽게 말할 수 있는 수준의 문장으로, 500자 이내로 제시.  
+      - 모든 항목은 줄바꿈만 사용하고 불릿이나 마크다운, 기호는 사용하지 말 것.
