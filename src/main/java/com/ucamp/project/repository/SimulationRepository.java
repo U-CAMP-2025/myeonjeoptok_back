@@ -2,8 +2,10 @@ package com.ucamp.project.repository;
 
 import com.ucamp.project.model.Post;
 import com.ucamp.project.model.Simulation;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -48,4 +50,13 @@ public interface SimulationRepository extends JpaRepository<Simulation, Long> {
     List<Simulation> findByPost(Post post);
 
     List<Simulation> findAllByUser_UserId(Long userId);
+
+    @Modifying
+    @Transactional
+    @Query(value = """
+    DELETE FROM SIMULATION s
+    WHERE (s.SIMULATION_STATUS = 'INPROGRESS' OR s.SIMULATION_COMPLETED_AT IS NULL)
+      AND s.SIMULATION_CREATED_AT < (SYSDATE - INTERVAL '2' HOUR)
+    """, nativeQuery = true)
+    int deleteInProgressOrIncomplete();
 }

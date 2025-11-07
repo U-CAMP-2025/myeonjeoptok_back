@@ -22,5 +22,8 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     @Modifying
     @Query("DELETE FROM Review re WHERE re.post = :post")
     void deleteAllByPost(@Param("post") Post post);
-    List<Review> findByPost_PostId(Long postId);
+
+    @Query("SELECT r FROM Review r WHERE r.post.postId = :postId ORDER BY r.reviewCreatedAt ASC")
+    List<Review> findByPost_PostId(@Param("postId") Long postId);
+
 }

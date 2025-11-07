@@ -3,6 +3,7 @@ package com.ucamp.project.repository;
 import com.ucamp.project.model.Post;
 import com.ucamp.project.model.Simulation;
 import com.ucamp.project.model.Transcription;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -33,4 +34,16 @@ public interface TranscriptionRepository extends JpaRepository<Transcription, Lo
     void deleteAllBySimulation_SimulationId(Long simulationId);
 
     long countBySimulation(Simulation simulation);
+
+    @Modifying
+    @Transactional
+    @Query(value = """
+    DELETE FROM TRANSCRIPTION t
+    WHERE t.SIMULATION_ID IN (
+        SELECT s.SIMULATION_ID FROM SIMULATION s
+        WHERE (s.SIMULATION_STATUS = 'INPROGRESS' OR s.SIMULATION_COMPLETED_AT IS NULL)
+          AND s.SIMULATION_CREATED_AT < (SYSDATE - INTERVAL '2' HOUR)
+    )
+    """, nativeQuery = true)
+    int deleteByInvalidSimulations();
 }
