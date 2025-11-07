@@ -1,7 +1,7 @@
 package com.ucamp.project.controller;
 
 import com.ucamp.project.service.OcrOpenService;
-import com.ucamp.project.service.OcrService;
+//import com.ucamp.project.service.OcrService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,7 +16,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class OcrController {
 
-    private final OcrService ocrService;
+//    private final OcrService ocrService;
     private final OcrOpenService ocrOpenService;
 
     @PostMapping
