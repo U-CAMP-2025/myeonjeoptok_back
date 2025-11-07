@@ -1,5 +1,6 @@
 package com.ucamp.project.controller;
 
+import com.ucamp.project.service.OcrOpenService;
 import com.ucamp.project.service.OcrService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,11 +17,12 @@ import java.util.Map;
 public class OcrController {
 
     private final OcrService ocrService;
+    private final OcrOpenService ocrOpenService;
 
     @PostMapping
     public ResponseEntity<Map<String, Object>> detectText(@RequestBody Map<String, String> body) throws Exception {
         String imageUrl = body.get("imageUrl");
-        Map<String, Object> result = ocrService.detectText(imageUrl);
+        Map<String, Object> result = ocrOpenService.detectText(imageUrl);
         return ResponseEntity.ok(result);
     }
 }
