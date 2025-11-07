@@ -34,6 +34,8 @@ public class PostService {
 
     private final TranscriptionRepository transcriptionRepository;
 
+    private final ScrapRepository scrapRepository;
+
     public List<Post> findAll() {
         return postRepository.findAll();
     }
@@ -152,7 +154,7 @@ public class PostService {
             }
         }
 
-        for (Iterator<Qa> iterator = qaList.iterator(); iterator.hasNext();) {
+        for (Iterator<Qa> iterator = qaList.iterator(); iterator.hasNext(); ) {
             Qa qa = iterator.next();
 
             // 요청에 없는 qaId를 처리
@@ -273,7 +275,18 @@ public class PostService {
         // 원본 Post 조회
         Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("존재하지 않는 질문셋입니다."));
 
-        post.setCount(post.getCount() + 1);
+        // 이미 스크랩한 글인지 체크
+
+        Optional<Scrap> scrap = scrapRepository.findById(ScrapId.builder()
+                .user(user.getUserId())
+                .post(postId)
+                .build());
+
+        // 없으면 카운트 증가
+        if (!scrap.isPresent()) {
+            scrapRepository.save(Scrap.builder().post(post).user(user).build());
+            post.setCount(post.getCount() + 1);
+        }
 
         // 원본 POST 복사
         Post copiedPost = Post.builder().postTitle(post.getPostTitle()).postDescription(post.getPostDescription()).user(user).postOtherWriter(post.getUser()).postStatus("N").build();
