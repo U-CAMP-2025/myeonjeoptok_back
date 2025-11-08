@@ -22,6 +22,7 @@ public class PostController {
 
     @GetMapping("/my")
     public ApiResponse<?> myPosts(@AuthenticationPrincipal User user){
+
         return ApiResponse.builder().code(200).message("success").data(postService.findAllByUserId(user.getUserId())).build();
     }
 
@@ -33,9 +34,9 @@ public class PostController {
 
     @PostMapping
     public ApiResponse<?> createPost(@RequestBody PostCreateRequestDTO req, @AuthenticationPrincipal User user){
-        log.info("TEST" + user.getUserId());
-        log.info("TEST" + req);
+
         Long postId = postService.createPost(req, user);
+
         return ApiResponse.builder().code(201).message("success").data(postId).build();
     }
 

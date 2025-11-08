@@ -6,6 +6,7 @@ import com.ucamp.project.dto.PostResponseDTO;
 import com.ucamp.project.dto.SimualtionPostResponse;
 import com.ucamp.project.model.*;
 import com.ucamp.project.repository.*;
+import com.ucamp.project.sse.SseComponent;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,10 @@ public class PostService {
     private final TranscriptionRepository transcriptionRepository;
 
     private final ScrapRepository scrapRepository;
+
+    private final NotificationRepository notificationRepository;
+
+    private final SseComponent sseComponent;
 
     public List<Post> findAll() {
         return postRepository.findAll();
@@ -112,7 +117,21 @@ public class PostService {
             throw new RuntimeException("비공개 질문셋입니다");
         }
 
-        return PostResponseDTO.builder().postId(post.getPostId()).job(postJobRepository.findByPostId(post.getPostId())).jobIds(postJobRepository.findByJobId(post.getPostId())).title(post.getPostTitle()).nickname(post.getUser().getNickname()).description(post.getPostDescription()).createAt(post.getPostUpdatedAt() == null ? post.getPostCreatedAt() : post.getPostUpdatedAt()).isPassed(post.getUser().getPassStatus() != null).isPublic(!isPublic).isMe(isMe).otherWriter(post.getPostOtherWriter() == null ? null : post.getPostOtherWriter().getNickname()).qa(qaDtoList).build();
+        return PostResponseDTO.builder()
+                .postId(post.getPostId())
+                .job(postJobRepository.findByPostId(post.getPostId()))
+                .jobIds(postJobRepository.findByJobId(post.getPostId()))
+                .title(post.getPostTitle())
+                .nickname(post.getUser().getNickname())
+                .description(post.getPostDescription())
+                .bookCount(post.getCount())
+                .createAt(post.getPostUpdatedAt() == null ? post.getPostCreatedAt() : post.getPostUpdatedAt())
+                .isPassed(post.getUser().getPassStatus() != null)
+                .isPublic(!isPublic)
+                .isMe(isMe)
+                .otherWriter(post.getPostOtherWriter() == null ? null : post.getPostOtherWriter().getNickname())
+                .qa(qaDtoList)
+                .build();
 
 
     }
@@ -232,9 +251,6 @@ public class PostService {
             case "bookcount":
                 sortColumn = "post_import_count";
                 break;
-            case "review":
-                sortColumn = "review"; // 예시
-                break;
             default:
                 sortColumn = "post_created_at"; // 기본값
         }
@@ -254,13 +270,29 @@ public class PostService {
             rawPage = postRepository.findPostsWithJoins(jobIds, pageable);
         }
 
-        List<PostResponseDTO> dtoList = rawPage.stream().map(obj -> PostResponseDTO.builder().postId(((Number) obj[0]).longValue()).nickname((String) obj[1]).job(obj[2] != null && !((String) obj[2]).isEmpty() ? List.of(((String) obj[2]).split(",")) : List.of()).title((String) obj[3]).description((String) obj[4]).bookCount(((Number) obj[5]).longValue()).review(((Number) obj[6]).intValue()).createAt(((java.sql.Timestamp) obj[7]).toLocalDateTime()).isPublic(((Number) obj[8]).intValue() == 1).isPassed(((Number) obj[9]).intValue() == 1).build()).toList();
+        List<PostResponseDTO> dtoList = rawPage.stream().map(obj ->
+                        PostResponseDTO.builder()
+                                .postId(((Number) obj[0]).longValue())
+                                .nickname((String) obj[1])
+                                .job(obj[2] != null
+                                        &&
+                                        !((String) obj[2]).isEmpty()
+                                        ?
+                                        List.of(((String) obj[2]).split(","))
+                                        :
+                                        List.of()).title((String) obj[3])
+                                .description((String) obj[4])
+                                .bookCount(((Number) obj[5]).longValue())
+                                .review(((Number) obj[6]).intValue())
+                                .createAt(((java.sql.Timestamp) obj[7]).toLocalDateTime())
+                                .isPublic(((Number) obj[8]).intValue() == 1)
+                                .isPassed(((Number) obj[9]).intValue() == 1).build())
+                .toList();
 
         for (PostResponseDTO resp : dtoList) {
             log.info("TEST : " + resp);
         }
 
-        // Page 구현
         return new PageImpl<>(dtoList, pageable, rawPage.getTotalElements());
     }
 
@@ -274,19 +306,6 @@ public class PostService {
 
         // 원본 Post 조회
         Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("존재하지 않는 질문셋입니다."));
-
-        // 이미 스크랩한 글인지 체크
-
-        Optional<Scrap> scrap = scrapRepository.findById(ScrapId.builder()
-                .user(user.getUserId())
-                .post(postId)
-                .build());
-
-        // 없으면 카운트 증가
-        if (!scrap.isPresent()) {
-            scrapRepository.save(Scrap.builder().post(post).user(user).build());
-            post.setCount(post.getCount() + 1);
-        }
 
         // 원본 POST 복사
         Post copiedPost = Post.builder().postTitle(post.getPostTitle()).postDescription(post.getPostDescription()).user(user).postOtherWriter(post.getUser()).postStatus("N").build();
@@ -314,6 +333,36 @@ public class PostService {
         }
         // QA 생성
         postRecive.setQaList(copiedQas);
+
+        log.info("생성");
+
+        // 이미 스크랩한 글인지 체크
+        Optional<Scrap> scrap = scrapRepository.findById(ScrapId.builder()
+                .user(user.getUserId())
+                .post(postId)
+                .build());
+
+        // 없으면 카운트 증가 및 알람 전송
+        if (scrap.isEmpty()) {
+            log.info("카운트 증가");
+            scrapRepository.save(Scrap.builder().post(post).user(user).build());
+            post.setCount(post.getCount() + 1);
+
+            // 알람 전송
+            String message = post.getPostTitle() + ":::" + postId;
+
+            Notification noti = Notification.builder()
+                    .notiId(null)
+                    .notiContent(message)
+                    .user(post.getUser())
+                    .notiType("SCRAP")
+                    .notiRead("N")
+                    .build();
+
+            notificationRepository.save(noti);
+
+            sseComponent.eventtrigger(post.getUser().getUserId());
+        }
 
         return postRecive.getPostId();
     }
