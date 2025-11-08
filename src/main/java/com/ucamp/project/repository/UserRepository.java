@@ -168,4 +168,18 @@ public interface UserRepository extends JpaRepository<User, Long> {
             """, nativeQuery = true)
     List<Object[]> findAllPractice(String period);
 
+    @Query(value = """
+            SELECT
+                u.user_id AS userId,
+                u.nickname AS nickname,
+                u.email AS email,
+                u.users_profile_image_url AS usersProfileImageUrl,
+                u.pass_status AS passStatus,
+                j.job_name AS jobName
+            FROM users u
+            LEFT JOIN job j ON u.job_id = j.job_id
+            WHERE u.user_id = :userId
+            """, nativeQuery = true)
+    UserDetailDto findUserDetailById(@Param("userId") Long userId);
+
 }

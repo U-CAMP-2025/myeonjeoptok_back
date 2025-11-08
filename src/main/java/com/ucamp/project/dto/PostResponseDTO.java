@@ -34,5 +34,5 @@ public class PostResponseDTO {
     private boolean isMe = false;
     @Builder.Default
     private List<PostCreateRequestDTO.QaSet> qa = List.of();
-
+    private Long userId;
 }
