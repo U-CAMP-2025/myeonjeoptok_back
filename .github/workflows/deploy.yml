@@ -42,7 +42,7 @@ jobs:
           overwrite: true
 
       - name: Restart ucamp service
-        uses: appleboy/scp-action@v01.10
+        uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
