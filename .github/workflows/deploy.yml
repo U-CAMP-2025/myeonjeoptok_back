@@ -1,59 +1,52 @@
 name: Deploy server
+
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
 
 jobs:
-  build-deploy:
+  build-and-deploy:
     runs-on: ubuntu-22.04
-    permissions:
-      contents: read
-      packages: write
-
-    env:
-      IMAGE: ghcr.io/${{ github.repository_owner }}/ucamp_project_server:latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 21
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: 21
-          cache: gradle
+          java-version: '21'
+          distribution: 'temurin'
 
-      - name: Grant execute permission for Gradle wrapper
-        run: chmod +x ./gradlew
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
-      - name: Build (Gradle bootJar)
-        run: ./gradlew clean bootJar -x test
+      - name: Build jar
+        run: ./gradlew clean bootJar
 
-      - name: Prepare JAR for Docker
-        run: |
-          JAR_PATH=$(ls build/libs/*-SNAPSHOT.jar | head -n1)
-          cp "$JAR_PATH" app.jar
+      - name: Copy jar to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "build/libs/*SNAPSHOT.jar"
+          target: "/opt/ucamp/app/app.jar"
+          overwrite: true
 
-      - name: Log in to GHCR
-        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-
-      - name: Build & Push Docker image
-        run: |
-          docker build -t "$IMAGE" .
-          docker push "$IMAGE"
-
-      - name: ADD SSH Key
-        run: |
-          echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
-          chmod 600 key.pem
-
-      - name: Deploy to EC2
-        run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
-            echo '${{ secrets.GHCR_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin && \
-            cd /opt/ucamp/app && \
-            docker compose pull app && \
-            docker compose up -d app && \
-            docker image prune -f
-          "
+      - name: Restart ucamp service
+        uses: appleboy/scp-action@v01.10
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            sudo systemctl restart ucamp
+            sudo systemctl status ucamp --no-pager
