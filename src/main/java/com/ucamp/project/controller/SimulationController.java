@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.parameters.P;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -101,7 +102,7 @@ public class SimulationController {
 
         // 2) STT
         String transcript = sttService.transcribe(saved);
-
+        transcript = (transcript == null) ? "" : transcript.trim();
         // 3) Transcription upsert
         Transcription tr = transcriptionService.upsert(simulationId, qaId, transcript);
 
@@ -120,11 +121,11 @@ public class SimulationController {
 
 // 3) 피드백 생성 & 저장
         String feedback = "";
-        if (question != null && !question.isBlank()) {
-            feedback = aiFeedbackService.generateFeedback(question, transcript); // 위 서비스 사용
-        }
-        if (feedback != null && !feedback.isBlank()) {
-            transcriptionService.updateFeedback(tr.getTrId(), feedback);
+        if (StringUtils.hasText(question) && StringUtils.hasText(transcript)) {
+            feedback = aiFeedbackService.generateFeedback(question.trim(), transcript);
+            if (StringUtils.hasText(feedback)) {
+                transcriptionService.updateFeedback(tr.getTrId(), feedback);
+            }
         }
 
         // 6) 프론트 응답

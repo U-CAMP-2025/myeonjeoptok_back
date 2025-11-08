@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
@@ -50,6 +51,9 @@ public class AiFeedbackService {
     public String generateFeedback(String question, String transcript) {
         if (question == null) question = "";
         if (transcript == null) transcript = "";
+        if (!StringUtils.hasText(transcript)) {
+            return ""; // 전사 비면 바로 종료
+        }
 
         String system = "너는 한국어 면접 코치다. 반드시 하나의 문자열만 출력한다.";
         String user = String.format("%s%n%n[질문]%n%s%n%n[지원자 STT 답변]%n%s",
