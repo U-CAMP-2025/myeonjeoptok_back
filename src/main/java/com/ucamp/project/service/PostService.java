@@ -117,7 +117,21 @@ public class PostService {
             throw new RuntimeException("비공개 질문셋입니다");
         }
 
-        return PostResponseDTO.builder().postId(post.getPostId()).job(postJobRepository.findByPostId(post.getPostId())).jobIds(postJobRepository.findByJobId(post.getPostId())).title(post.getPostTitle()).nickname(post.getUser().getNickname()).description(post.getPostDescription()).createAt(post.getPostUpdatedAt() == null ? post.getPostCreatedAt() : post.getPostUpdatedAt()).isPassed(post.getUser().getPassStatus() != null).isPublic(!isPublic).isMe(isMe).otherWriter(post.getPostOtherWriter() == null ? null : post.getPostOtherWriter().getNickname()).qa(qaDtoList).build();
+        return PostResponseDTO.builder()
+                .postId(post.getPostId())
+                .job(postJobRepository.findByPostId(post.getPostId()))
+                .jobIds(postJobRepository.findByJobId(post.getPostId()))
+                .title(post.getPostTitle())
+                .nickname(post.getUser().getNickname())
+                .description(post.getPostDescription())
+                .bookCount(post.getCount())
+                .createAt(post.getPostUpdatedAt() == null ? post.getPostCreatedAt() : post.getPostUpdatedAt())
+                .isPassed(post.getUser().getPassStatus() != null)
+                .isPublic(!isPublic)
+                .isMe(isMe)
+                .otherWriter(post.getPostOtherWriter() == null ? null : post.getPostOtherWriter().getNickname())
+                .qa(qaDtoList)
+                .build();
 
 
     }

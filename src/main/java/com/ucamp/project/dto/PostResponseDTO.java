@@ -19,12 +19,20 @@ public class PostResponseDTO {
     private List<Long> jobIds;      // 직무 배열
     private String title;          // 글 제목
     private String description;    // 글 설명
-    private Long bookCount;         // 담은 사람 수
-    private int review;            // 리뷰 수
-    private LocalDateTime createAt;
-    private boolean isPassed;
-    private boolean isPublic;
-    private boolean isMe;
-    private List<PostCreateRequestDTO.QaSet> qa;
+
+    @Builder.Default
+    private Long bookCount = 0L;      // 담은 사람 수
+    @Builder.Default
+    private int review = 0;           // 리뷰 수
+    @Builder.Default
+    private LocalDateTime createAt = null;
+    @Builder.Default
+    private boolean isPassed = false;
+    @Builder.Default
+    private boolean isPublic = false;
+    @Builder.Default
+    private boolean isMe = false;
+    @Builder.Default
+    private List<PostCreateRequestDTO.QaSet> qa = List.of();
 
 }
