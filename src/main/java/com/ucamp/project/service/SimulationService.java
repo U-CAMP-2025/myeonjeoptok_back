@@ -47,6 +47,7 @@ public class SimulationService {
         }
     }
 
+    @Transactional(readOnly = true)
     public SimulationDetailResponse findDetail(Long simulationId) {
         Simulation sim = simulationRepository.findBySimulationId(simulationId)
                 .orElseThrow(() -> new IllegalArgumentException("Simulation not found: " + simulationId));
@@ -85,6 +86,7 @@ public class SimulationService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
     public SimulationDetailResponse findStart(Long simulationId) {
         Simulation sim = simulationRepository.findBySimulationId(simulationId)
                 .orElseThrow(() -> new IllegalArgumentException("Simulation not found: " + simulationId));
@@ -220,22 +222,33 @@ public class SimulationService {
         }
     }
 
+    @Transactional(readOnly = true)
     public boolean transCheck(Long simulationId) {
-        int i = 0;
-        Simulation simulation = simulationRepository.findById(simulationId)
+        Simulation sim = simulationRepository.findById(simulationId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 시뮬이 존재하지 않습니다."));
-        while (i++ < 36){
-            long trCount = transcriptionRepository.countBySimulation(simulation);
-            if(simulation.getSimulationQACount().equals(trCount)){
-                return true;
+
+        // 기대 개수: simulationQACount 없으면 Post의 QA 개수로 보정
+        long expected = Optional.ofNullable(sim.getSimulationQACount())
+                .map(Long::valueOf)
+                .orElseGet(() -> (long) sim.getPost().getQaList().size());
+        System.out.println("변환 갯수 세는중: " + expected);
+
+        int tries = 0;
+        while (tries++ < 60) { // 1초 간격 × 180 = 3분 (필요시 조정)
+            long stt = transcriptionRepository.countBySimulation_SimulationId(simulationId);
+            long fb  = transcriptionRepository.countFeedbackIncludingSilent(simulationId);
+            System.out.println("STT count=" + stt + ", FB count=" + fb + ", expected=" + expected);
+
+            if (stt <= fb) {
+                return true; // STT & 피드백 모두 완료
             }
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
+
+            try { Thread.sleep(1000); }
+            catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return false;
             }
         }
-        return false;
+        return false; // 타임아웃
     }
 }

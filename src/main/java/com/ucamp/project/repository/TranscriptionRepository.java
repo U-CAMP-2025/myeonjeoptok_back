@@ -34,6 +34,15 @@ public interface TranscriptionRepository extends JpaRepository<Transcription, Lo
     void deleteAllBySimulation_SimulationId(Long simulationId);
 
     long countBySimulation(Simulation simulation);
+    @Query(value = """
+    SELECT COUNT(*)
+    FROM TRANSCRIPTION t
+    WHERE t.SIMULATION_ID = :simulationId
+     AND DBMS_LOB.GETLENGTH(
+           REGEXP_REPLACE(NVL(t.TR_ANSWER_TEXT, ' '), '^[[:space:]]+|[[:space:]]+$', '')
+        ) > 0
+    """, nativeQuery = true)
+    long countBySimulation_SimulationId(Long simulationId);
 
     @Modifying
     @Transactional
@@ -46,4 +55,16 @@ public interface TranscriptionRepository extends JpaRepository<Transcription, Lo
     )
     """, nativeQuery = true)
     int deleteByInvalidSimulations();
+
+
+    @Query(value = """
+    SELECT COUNT(*)
+      FROM TRANSCRIPTION t
+     WHERE t.SIMULATION_ID = :simulationId
+       AND (
+            DBMS_LOB.GETLENGTH(REGEXP_REPLACE(NVL(t.FEEDBACK, ' '), '^[[:space:]]+|[[:space:]]+$', '')) > 0
+         OR DBMS_LOB.GETLENGTH(REGEXP_REPLACE(NVL(t.TR_ANSWER_TEXT, ' '), '^[[:space:]]+|[[:space:]]+$', '')) = 0
+       )
+""", nativeQuery = true)
+    long countFeedbackIncludingSilent(@Param("simulationId") Long simulationId);
 }

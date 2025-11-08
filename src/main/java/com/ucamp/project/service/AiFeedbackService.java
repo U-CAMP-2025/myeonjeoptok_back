@@ -5,10 +5,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import reactor.netty.http.client.HttpClient;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
@@ -45,6 +47,8 @@ public class AiFeedbackService {
         this.webClient = WebClient.builder()
                 .baseUrl(root) // https://api.openai.com
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
+                .clientConnector(new ReactorClientHttpConnector(HttpClient.create()
+                        .wiretap(true)))
                 .build();
     }
 
