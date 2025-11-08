@@ -67,6 +67,17 @@ public class NotificationController {
         return resp;
     }
 
+    @GetMapping("/last")
+    public ApiResponse<Object> findOne(@AuthenticationPrincipal User user){
+        ApiResponse<Object> resp = ApiResponse.builder()
+                .code(200)
+                .message("success")
+                .data(notificationService.findOne(user.getUserId()))
+                .build();
+
+        return resp;
+    }
+
     @PutMapping("/{notiId}")
     public ResponseEntity<?> readOne(@PathVariable Long notiId, @AuthenticationPrincipal User user){
         notificationService.readOne(notiId,user.getUserId());
