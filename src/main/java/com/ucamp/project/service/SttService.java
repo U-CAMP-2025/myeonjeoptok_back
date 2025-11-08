@@ -44,7 +44,19 @@ public class SttService {
 
     public String transcribe(Path audioPath) {
         try {
-            MultiValueMap<String, HttpEntity<?>> body = buildMultipart(audioPath);
+            long size = java.nio.file.Files.size(audioPath);
+
+            // (1) 무음 휴리스틱(필요시 임계값 조정)
+            boolean likelySilent = size < 10_000; // 기존 2KB -> 10KB로 상향 권장 (WebM 헤더 때문에 약간 크게)
+
+            if (likelySilent) {
+                // 완전 무음이면 아예 호출하지 않고 빈 문자열 반환
+                return "";
+            }
+
+            // (2) 무음이 아니라고 판단될 때만 prompt 포함
+            MultiValueMap<String, HttpEntity<?>> body = buildMultipart(audioPath, /* includePrompt */ true);
+
             return webClient.post()
                     .uri("/v1/audio/transcriptions")
                     .contentType(MediaType.MULTIPART_FORM_DATA)
@@ -56,16 +68,41 @@ public class SttService {
                     )
                     .bodyToMono(Map.class)
                     .map(map -> String.valueOf(map.getOrDefault("text", "")))
+                    .map(this::sanitizeTranscript)
                     .block();
+
         } catch (Exception e) {
             throw new RuntimeException("STT 호출 실패: " + e.getMessage(), e);
         }
     }
 
-    private MultiValueMap<String, HttpEntity<?>> buildMultipart(Path audioPath) {
+    // 결과 후처리(프롬프트 에코 방지)
+    private String sanitizeTranscript(String text) {
+        String t = (text == null) ? "" : text.trim();
+        if (t.isEmpty()) return "";
+
+        if (sttPrompt != null && !sttPrompt.isBlank()) {
+            String p = sttPrompt.trim();
+
+            // 완전 일치, 공백 무시 일치, prefix 일치까지 컷
+            String tNoSpace = t.replaceAll("\\s+", "");
+            String pNoSpace = p.replaceAll("\\s+", "");
+
+            if (t.equals(p) || tNoSpace.equals(pNoSpace) || t.startsWith(p) || tNoSpace.startsWith(pNoSpace)) {
+                return "";
+            }
+        }
+        return t;
+    }
+
+    // includePrompt를 실제로 사용하도록 수정
+    private MultiValueMap<String, HttpEntity<?>> buildMultipart(Path audioPath, boolean includePrompt) {
         var builder = new org.springframework.http.client.MultipartBodyBuilder();
         builder.part("model", sttModel);
-        if (sttPrompt != null && !sttPrompt.isBlank()) builder.part("prompt", sttPrompt);
+
+        if (includePrompt && sttPrompt != null && !sttPrompt.isBlank()) {
+            builder.part("prompt", sttPrompt);
+        }
 
         FileSystemResource fs = new FileSystemResource(audioPath.toFile());
         ContentDisposition cd = ContentDisposition.formData()
@@ -75,10 +112,13 @@ public class SttService {
 
         HttpHeaders fh = new HttpHeaders();
         fh.setContentDisposition(cd);
-        fh.setContentType(MediaType.parseMediaType("audio/webm")); // 업로드 포맷에 맞게
+        fh.setContentType(MediaType.parseMediaType("audio/webm"));
 
         HttpEntity<FileSystemResource> fileEntity = new HttpEntity<>(fs, fh);
         builder.part("file", fileEntity);
+
+        // (선택) 디코딩이 튀지 않도록 temperature=0 권장
+        builder.part("temperature", "0");
 
         return builder.build();
     }
