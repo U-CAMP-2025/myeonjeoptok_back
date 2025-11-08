@@ -13,12 +13,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import org.springframework.transaction.annotation.Transactional;
-import java.util.Set;
+
+import java.util.*;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -93,19 +91,31 @@ import java.util.NoSuchElementException;
 
     // userId로 User 조회
     public UserDTO findUserByUserId(Long userId) {
-        User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("해당 유저 없음"));
+        Map<String, Object> row = userRepository.findUserWithLatestCertStatus(userId);
+        if (row == null || row.isEmpty()) {
+            throw new RuntimeException("해당 유저 없음");
+        }
+
+        Job job = null;
+        if (row.get("jobId") != null) {
+            job = Job.builder()
+                    .jobId(((Number) row.get("jobId")).longValue())
+                    .jobName((String) row.get("jobName"))
+                    .build();
+        }
 
         return UserDTO.builder()
-                .userId(String.valueOf(user.getUserId()))
-                .nickname(user.getNickname())
-                .email(user.getEmail())
-                .job(user.getJob())
-                .passStatus(user.getPassStatus())
-                .status(user.getStatus())
-                .userProfileImageUrl(user.getUsersProfileImageUrl())
+                .userId(String.valueOf(((Number) row.get("userId")).longValue()))
+                .nickname((String) row.get("nickname"))
+                .email((String) row.get("email"))
+                .job(job)
+                .passStatus(row.get("passStatus") == null ? null : String.valueOf(row.get("passStatus")))
+                .status((String) row.get("status"))
+                .userProfileImageUrl((String) row.get("userProfileImageUrl"))
+                .certStatus(row.get("certStatus") == null ? null : String.valueOf(row.get("certStatus")))
                 .build();
     }
+
 
     // user role 조회
     public String findUserRoleByUserId(Long userId) {

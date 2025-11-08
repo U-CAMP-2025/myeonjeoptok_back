@@ -1,9 +1,6 @@
 package com.ucamp.project.repository;
 
-import com.ucamp.project.dto.RankResponse;
-import com.ucamp.project.dto.UserResponse;
-import com.ucamp.project.dto.UserWithCertDTO;
-import com.ucamp.project.dto.UserWithSimulDTO;
+import com.ucamp.project.dto.*;
 import com.ucamp.project.model.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +14,32 @@ import java.util.*;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
+
+    @Query(value = """
+    SELECT 
+        u.user_id AS userId,
+        u.nickname,
+        u.email,
+        j.job_id AS jobId,
+        j.job_name AS jobName,
+        u.pass_status AS passStatus,
+        u.status,
+        u.users_profile_image_url AS userProfileImageUrl,
+        (
+            SELECT c.cert_status
+            FROM certificate c
+            WHERE c.user_id = u.user_id
+            AND c.cert_req_date = (
+                SELECT MAX(c2.cert_req_date)
+                FROM certificate c2
+                WHERE c2.user_id = u.user_id
+            )
+        ) AS certStatus
+    FROM users u
+    LEFT JOIN job j ON u.job_id = j.job_id
+    WHERE u.user_id = :userId
+""", nativeQuery = true)
+    Map<String, Object> findUserWithLatestCertStatus(@Param("userId") Long userId);
 
     Optional<User> findByUserId(Long userId);
 
