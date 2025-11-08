@@ -38,7 +38,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll() // 토큰 재발행
                         .requestMatchers("/image/**").permitAll()
-                        .requestMatchers( "/api/jobs/**", "/api/rank/**", "/api/posts/search").permitAll() // 직무, 랭킹, 면접 연습 전체 조회
+                        .requestMatchers( "/api/jobs/**", "/api/rank/**", "/api/posts/search", "/api/users/**").permitAll() // 직무, 랭킹, 면접 연습 전체 조회
                         .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN") // 어드민 페이지
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().hasAnyAuthority("ROLE_USER","ROLE_NEW","ROLE_ADMIN")) // 나머지

@@ -119,6 +119,7 @@ public class PostService {
 
         return PostResponseDTO.builder()
                 .postId(post.getPostId())
+                .userId(post.getUser().getUserId())
                 .job(postJobRepository.findByPostId(post.getPostId()))
                 .jobIds(postJobRepository.findByJobId(post.getPostId()))
                 .title(post.getPostTitle())
@@ -132,8 +133,6 @@ public class PostService {
                 .otherWriter(post.getPostOtherWriter() == null ? null : post.getPostOtherWriter().getNickname())
                 .qa(qaDtoList)
                 .build();
-
-
     }
 
     @Transactional
@@ -173,7 +172,7 @@ public class PostService {
             }
         }
 
-        for (Iterator<Qa> iterator = qaList.iterator(); iterator.hasNext(); ) {
+        for (Iterator<Qa> iterator = qaList.iterator(); iterator.hasNext();) {
             Qa qa = iterator.next();
 
             // 요청에 없는 qaId를 처리
@@ -251,6 +250,9 @@ public class PostService {
             case "bookcount":
                 sortColumn = "post_import_count";
                 break;
+            case "review":
+                sortColumn = "review"; // 예시
+                break;
             default:
                 sortColumn = "post_created_at"; // 기본값
         }
@@ -293,6 +295,7 @@ public class PostService {
             log.info("TEST : " + resp);
         }
 
+        // Page 구현
         return new PageImpl<>(dtoList, pageable, rawPage.getTotalElements());
     }
 
@@ -306,6 +309,8 @@ public class PostService {
 
         // 원본 Post 조회
         Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("존재하지 않는 질문셋입니다."));
+
+        post.setCount(post.getCount() + 1);
 
         // 원본 POST 복사
         Post copiedPost = Post.builder().postTitle(post.getPostTitle()).postDescription(post.getPostDescription()).user(user).postOtherWriter(post.getUser()).postStatus("N").build();
