@@ -38,7 +38,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "build/libs/*SNAPSHOT.jar"
-          target: "/opt/ucamp/app/app.jar"
+          target: "/opt/ucamp/app/"
           overwrite: true
 
       - name: Restart ucamp service
