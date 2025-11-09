@@ -16,4 +16,5 @@ public class UserDetailDto {
     private String usersProfileImageUrl;
     private Character passStatus;
     private String jobName;
+    private String paymentStatus;
 }
