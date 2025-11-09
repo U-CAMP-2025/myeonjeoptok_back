@@ -3,7 +3,7 @@ package com.ucamp.project.scheduler;
 import com.ucamp.project.model.Notification;
 import com.ucamp.project.model.Payments;
 import com.ucamp.project.repository.NotificationRepository;
-import com.ucamp.project.repository.PaymentRepository;
+import com.ucamp.project.repository.PaymentsRepository;
 import com.ucamp.project.sse.SseComponent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +21,7 @@ import java.util.List;
 @Slf4j
 public class NotiScheduler {
 
-    private final PaymentRepository paymentRepository;
+    private final PaymentsRepository paymentsRepository;
     private final NotificationRepository notificationRepository;
     private final SseComponent sseComponent;
 
@@ -35,7 +35,7 @@ public class NotiScheduler {
         LocalDateTime to   = today.plusDays(7).atTime(23, 59, 59);      // 7일 후 23:59:59
 
         List<Payments> targets =
-                paymentRepository.findByPaymentStatusAndExpiredAtBetween("ACTIVE", from, to);
+                paymentsRepository.findByPaymentStatusAndExpiredAtBetween("ACTIVE", from, to);
 
         int saved = 0, skipped = 0;
 
