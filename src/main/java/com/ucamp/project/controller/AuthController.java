@@ -205,6 +205,7 @@ public class AuthController {
         String accessToken = jwt.access(u);
         String refreshToken = jwt.refresh(u);
         u.setRefreshToken(refreshToken);
+        users.save(u);
         // 세션 정리
         session.invalidate();
 

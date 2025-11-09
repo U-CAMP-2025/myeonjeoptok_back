@@ -4,11 +4,13 @@ import com.ucamp.project.model.Post;
 import com.ucamp.project.model.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,7 +22,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     @Query("SELECT p FROM Post p WHERE p.user.userId = :userId")
     Page<Post> simulGetPostPageable(@Param("userId") Long userId, Pageable pageable);
-
 
     Optional<Post> findByUserUserIdAndPostId(Long userId, Long postId);
 
@@ -108,10 +109,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     // DB에 저장 완료 후 응답 반환
     @Query("""
-    select p from Post p
-    left join fetch p.qaList q
-    where p.postId = :postId
-""")
+                select p from Post p
+                left join fetch p.qaList q
+                where p.postId = :postId
+            """)
     Optional<Post> findByIdFetchQa(@Param("postId") Long postId);
 
     int countByUser(User user);
@@ -131,5 +132,20 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             GROUP BY p.post_id, p.post_title, p.post_description, p.post_import_count, p.post_created_at
             ORDER BY p.post_created_at DESC
             """, nativeQuery = true)
-    List<Object []> findPostDetailById(@Param("userId") Long userId);
+    List<Object[]> findPostDetailById(@Param("userId") Long userId);
+
+    @Query(value = "SELECT user_id " +
+            "FROM (SELECT user_id " +
+            "FROM Post " +
+            "GROUP BY user_id " +
+            "HAVING COUNT(user_id) >= 10) post_users " +
+            "WHERE NOT EXISTS (" +
+            "SELECT 1 " +
+            "FROM PAYMENTS " +
+            "WHERE PAYMENTS.user_id = post_users.user_id " +
+            "AND expired_at > :now" +
+            ")", nativeQuery = true)
+    List<Long> findUsersWithPostsAndNoRecentPayments(@Param("now") LocalDateTime now);
+
+    List<Post> findByUserUserId(Long userId, Sort sort);
 }
