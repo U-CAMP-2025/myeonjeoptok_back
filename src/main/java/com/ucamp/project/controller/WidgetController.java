@@ -37,6 +37,7 @@ public class WidgetController {
     private final PaymentsService paymentsService;
 
     // 로그인한 사용자의 최근 결제 내역 조회
+    @GetMapping
     public ResponseEntity<?> getMyLatestPayment(@AuthenticationPrincipal User user) {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)

@@ -4,6 +4,7 @@ import com.ucamp.project.auth.security.JwtTokenProvider;
 import com.ucamp.project.model.Job;
 import com.ucamp.project.model.User;
 import com.ucamp.project.repository.UserRepository;
+import com.ucamp.project.service.CheckPaymentService;
 import com.ucamp.project.service.NotificationService;
 import com.ucamp.project.service.SimulationService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,6 +35,7 @@ public class AuthController {
     private final JwtTokenProvider jwt;
     private final NotificationService notificationService;
     private final SimulationService simulationService;
+    private final CheckPaymentService checkPaymentService;
 
     @Value("${kakao.client-id}")     String clientId;
     @Value("${kakao.client-secret}") String clientSecret;
@@ -118,12 +120,15 @@ public class AuthController {
             String profileImageUrl = u.getUsersProfileImageUrl() != null
                     ? URLEncoder.encode(u.getUsersProfileImageUrl(), StandardCharsets.UTF_8)
                     : "";
+
+            boolean isPaymentUser = checkPaymentService.isPayment(u.getUserId());
+
             // 로그인 후 다음으로 이동하고싶은 페이지 지정
             String nextPage = "/myqa";
             // 기존 유저: 프론트 홈으로 토큰 전달 리다이렉트
             String redirectUrl = String.format(
-                    "%s/login/bridge?accessToken=%s&refreshToken=%s&nickname=%s&profileImageUrl=%s&next=%s",
-                    clientOrigin, at, rt, nickname, profileImageUrl, URLEncoder.encode(nextPage, StandardCharsets.UTF_8)
+                    "%s/login/bridge?accessToken=%s&nickname=%s&profileImageUrl=%s&isPlus=%b&next=%s",
+                    clientOrigin, at, nickname, profileImageUrl, isPaymentUser, URLEncoder.encode(nextPage, StandardCharsets.UTF_8)
             );
 
             return ResponseEntity.status(302)
@@ -188,7 +193,6 @@ public class AuthController {
         String accessToken = jwt.access(u);
         String refreshToken = jwt.refresh(u);
         u.setRefreshToken(refreshToken);
-        users.save(u);
         // 세션 정리
         session.invalidate();
 
