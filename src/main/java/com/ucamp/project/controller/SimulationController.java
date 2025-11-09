@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,6 +36,7 @@ public class SimulationController {
     private final SimulationRecordService simulationRecordService;
     private final TranscriptionService transcriptionService;
     private final AiFeedbackService aiFeedbackService;
+    private final CheckPaymentService checkPaymentService;
 
     @GetMapping
     public ApiResponse<Object> getPost(@AuthenticationPrincipal User user) {
@@ -70,6 +72,22 @@ public class SimulationController {
         simulation.setUser(user);
 //        simulation.setUser(new User());
 //        simulation.getUser().setUserId(101l);
+
+        // 결제 유저 판단
+        boolean subscribed = checkPaymentService.isPayment(user.getUserId());
+        if (!subscribed) {
+            var now = java.time.LocalDateTime.now();
+            var startOfDay = now.withHour(0).withMinute(0).withSecond(0).withNano(0);
+            var endOfDay   = startOfDay.plusDays(1);
+            long doneToday = simulationService.countUserDailySuccess(user.getUserId(), startOfDay, endOfDay);
+            if (doneToday >= 3) {
+                return ApiResponse.builder()
+                        .code(403)
+                        .message("무료 이용자는 하루 3회까지만 면접 연습이 가능합니다. 구독 시 무제한 이용 가능합니다.")
+                        .build();
+            }
+        }
+
 
 
         ApiResponse<Object> resp = ApiResponse.builder()
