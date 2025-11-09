@@ -56,6 +56,7 @@ public class PaymentsController {
                         .orderId(p.getOrderId())
                         .paymentKey(p.getPaymentKey())
                         .approvedAt(p.getApprovedAt())
+                        .startedAt(p.getStartedAt())
                         .expiredAt(p.getExpiredAt())
                         .totalAmount(p.getTotalAmount())
                         .paymentStatus(p.getPaymentStatus())
@@ -83,6 +84,7 @@ public class PaymentsController {
                 .orderId(payment.getOrderId())
                 .paymentKey(payment.getPaymentKey())
                 .approvedAt(payment.getApprovedAt())
+                .startedAt(payment.getStartedAt())
                 .expiredAt(payment.getExpiredAt())
                 .totalAmount(payment.getTotalAmount())
                 .paymentStatus(payment.getPaymentStatus())
@@ -111,6 +113,7 @@ public class PaymentsController {
                         .orderId(p.getOrderId())
                         .paymentKey(p.getPaymentKey())
                         .approvedAt(p.getApprovedAt())
+                        .startedAt(p.getStartedAt())
                         .expiredAt(p.getExpiredAt())
                         .totalAmount(p.getTotalAmount())
                         .paymentStatus(p.getPaymentStatus())
@@ -169,7 +172,8 @@ public class PaymentsController {
 
         if (isSuccess) {
             // ② 결제 데이터 DB 저장
-            paymentsService.savePaymentFromToss(tossResponse, user.getUserId());
+            // paymentsService.savePaymentFromToss(tossResponse, user.getUserId());
+            paymentsService.createPayment(tossResponse, user.getUserId());
         }
 
         return ResponseEntity.status(code).body(tossResponse);

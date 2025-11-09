@@ -41,6 +41,9 @@ public class Payments {
     @Column(name = "expired_at", nullable = false)
     private LocalDateTime expiredAt;   // 구독 만료 시각
 
+    @Column(name = "started_at", nullable = false)
+    private LocalDateTime startedAt; // 구독 시작 시각
+
     @Column(name = "total_amount", nullable = false)
     private Long totalAmount;          // 결제 금액
 
@@ -58,6 +61,9 @@ public class Payments {
         }
         if (this.approvedAt == null) {
             this.approvedAt = LocalDateTime.now();
+        }
+        if (this.startedAt == null) {
+            this.startedAt = LocalDateTime.now();
         }
         if (this.expiredAt == null) {
             // 기본 만료일: 1개월 후
