@@ -80,7 +80,7 @@ public class PaymentsService {
 
         // 승인일자 파싱
         String approvedAtStr = (String) tossResponse.get("approvedAt");
-        LocalDateTime approvedAt = LocalDateTime.parse(approvedAtStr, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+        LocalDateTime tossApprovedAt = LocalDateTime.parse(approvedAtStr, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         LocalDateTime now = LocalDateTime.now();
 
         // ===== 2️⃣ 유저 최신 결제 조회 =====
@@ -88,21 +88,24 @@ public class PaymentsService {
 
         LocalDateTime startedAt;
         LocalDateTime expiredAt;
+        LocalDateTime approvedAt;
         // String status;
 
         // ===== 3️⃣ 신규 / 갱신 분기 =====
-        if (latest != null && !latest.getExpiredAt().isBefore(now.minusDays(30))) {
+        if (latest != null && !latest.getExpiredAt().isBefore(now.minusDays(31))) {
             // ✅ 갱신
-            startedAt = latest.getApprovedAt();          // 기존 결제 승인일 유지
-            expiredAt = latest.getExpiredAt().plusMonths(1); // 만료일 연장
+            startedAt = latest.getExpiredAt();          // 새 구독 시작일은 이전 만료일
+            expiredAt = latest.getExpiredAt().plusMonths(1); // 새 만료일은 +1개월
+            approvedAt = now;                           // 결제일은 현재 시간
             // status = "RENEWED";
-            log.info("🔁 구독 갱신 처리됨");
+            System.out.println("🔁 구독 갱신 처리됨");
         } else {
             // ✅ 신규
             startedAt = now;
             expiredAt = now.plusMonths(1);
+            approvedAt = now; // tossApprovedAt도 동일시 가능
             // status = "NEW";
-            log.info("🆕 신규 결제 처리됨");
+            System.out.println("🆕 신규 결제 처리됨");
         }
 
         // ===== 4️⃣ 엔티티 생성 =====
@@ -120,5 +123,4 @@ public class PaymentsService {
         // ===== 5️⃣ 저장 =====
         return paymentsRepository.save(payment);
     }
-
 }
