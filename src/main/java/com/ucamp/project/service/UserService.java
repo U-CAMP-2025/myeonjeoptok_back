@@ -189,6 +189,7 @@ import java.time.LocalDateTime;
         response.setUserImageUrl(userDetail.getUsersProfileImageUrl());
         response.setPassStatus(userDetail.getPassStatus());
         response.setJobName(userDetail.getJobName());
+        response.setPaymentStatus(userDetail.getPaymentStatus());
         response.setPosts(postDetail);
 
         return response;
