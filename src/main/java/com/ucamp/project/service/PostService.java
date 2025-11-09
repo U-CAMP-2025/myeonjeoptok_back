@@ -51,11 +51,11 @@ public class PostService {
     public List<SimualtionPostResponse> simulGetPost(User user) {
 
         // 결제 확인
-        Optional<Payments> payments = paymentsRepository.findByUserAndExpiredAtBeforeAndPaymentStatus(user, LocalDateTime.now(), "ACTIVE");
+        boolean payments = paymentsRepository.hasActivePayment(user.getUserId(), LocalDateTime.now());
 
         int max_count = 9;
 
-        if(payments.isPresent()){
+        if(payments){
             max_count = 21;
         }
 
@@ -76,11 +76,11 @@ public class PostService {
     public List<PostResponseDTO> findAllByUserId(User user) {
 
         // 결제 확인
-        Optional<Payments> payments = paymentsRepository.findByUserAndExpiredAtBeforeAndPaymentStatus(user, LocalDateTime.now(), "ACTIVE");
+        boolean payments = paymentsRepository.hasActivePayment(user.getUserId(), LocalDateTime.now());
 
         int max_count = 9;
 
-        if(payments.isPresent()){
+        if(payments){
             max_count = 21;
         }
 
@@ -157,8 +157,8 @@ public class PostService {
         boolean isPayment = true;
 
         //결제 정보
-        Optional<Payments> payments = paymentsRepository.findByUserAndExpiredAtBeforeAndPaymentStatus(user, LocalDateTime.now(), "ACTIVE");
-        if(post.getPostOtherWriter() != null && payments.isEmpty()){
+        boolean payments = paymentsRepository.hasActivePayment(user.getUserId(), LocalDateTime.now());
+        if(post.getPostOtherWriter() != null && payments){
             isPayment = false;
         }
 
@@ -192,8 +192,8 @@ public class PostService {
         Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("존재하지 않는 질문셋입니다."));
 
         // 결제 확인
-        Optional<Payments> payments = paymentsRepository.findByUserAndExpiredAtBeforeAndPaymentStatus(user, LocalDateTime.now(), "ACTIVE");
-        if(post.getPostOtherWriter() != null && payments.isEmpty()){
+        boolean payments = paymentsRepository.hasActivePayment(user.getUserId(), LocalDateTime.now());
+        if(post.getPostOtherWriter() != null && payments){
             throw new RuntimeException("스크랩해온 글을 수정하러면 구독이 필요합니다.");
         }
 
@@ -361,11 +361,13 @@ public class PostService {
         List<Post> postCount = postRepository.simulGetPost(user.getUserId());
 
         // 결제 확인
-        Optional<Payments> payments = paymentsRepository.findByUserAndExpiredAtBeforeAndPaymentStatus(user, LocalDateTime.now(), "ACTIVE");
+        boolean payments = paymentsRepository.hasActivePayment(user.getUserId(), LocalDateTime.now());
 
         int max_size = 9;
 
-        if (payments.isPresent()) {
+
+        if (payments) {
+            log.info("copy 작동");
             max_size = 21;
         }
 
@@ -375,8 +377,6 @@ public class PostService {
 
         // 원본 Post 조회
         Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("존재하지 않는 질문셋입니다."));
-
-        post.setCount(post.getCount() + 1);
 
         // 원본 POST 복사
         Post copiedPost = Post.builder().postTitle(post.getPostTitle()).postDescription(post.getPostDescription()).user(user).postOtherWriter(post.getUser()).postStatus("N").build();
@@ -441,12 +441,11 @@ public class PostService {
     public CreatePostCheckResponse postCreateCheck(User user) {
 
         //결제 확인
-        Optional<Payments> payments = paymentsRepository.
-                findByUserAndExpiredAtBeforeAndPaymentStatus(user, LocalDateTime.now(), "ACTIVE");
+        boolean payments = paymentsRepository.hasActivePayment(user.getUserId(), LocalDateTime.now());
 
         return CreatePostCheckResponse.builder()
                 .count(postRepository.countByUser(user))
-                .payments(payments.isPresent())
+                .payments(payments)
                 .build();
     }
 }
