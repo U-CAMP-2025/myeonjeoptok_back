@@ -33,6 +33,8 @@ public class PostResponseDTO {
     @Builder.Default
     private boolean isMe = false;
     @Builder.Default
+    private boolean isPayment = false;
+    @Builder.Default
     private List<PostCreateRequestDTO.QaSet> qa = List.of();
-
+    private Long userId;
 }

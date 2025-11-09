@@ -18,6 +18,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT p FROM Post p WHERE user.userId = :userId")
     List<Post> simulGetPost(@Param("userId") Long userId);
 
+    @Query("SELECT p FROM Post p WHERE p.user.userId = :userId")
+    Page<Post> simulGetPostPageable(@Param("userId") Long userId, Pageable pageable);
+
 
     Optional<Post> findByUserUserIdAndPostId(Long userId, Long postId);
 
@@ -112,4 +115,21 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Optional<Post> findByIdFetchQa(@Param("postId") Long postId);
 
     int countByUser(User user);
+
+    @Query(value = """
+            SELECT
+                p.post_id AS postId,
+                p.post_title AS postTitle,
+                p.post_description AS postDescription,
+                p.post_import_count AS bookmarkCount,
+                TO_CHAR(p.post_created_at, 'YYYY-MM-DD') AS postCreatedAt,
+                COUNT(r.review_id) AS reviewCount
+            FROM post p
+            LEFT JOIN review r ON p.post_id = r.post_id
+            WHERE p.user_id = :userId
+            AND p.post_status = 'Y'
+            GROUP BY p.post_id, p.post_title, p.post_description, p.post_import_count, p.post_created_at
+            ORDER BY p.post_created_at DESC
+            """, nativeQuery = true)
+    List<Object []> findPostDetailById(@Param("userId") Long userId);
 }

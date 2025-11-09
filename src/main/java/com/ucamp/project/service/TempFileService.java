@@ -25,7 +25,6 @@ public class TempFileService {
             if (ext == null || ext.isBlank()) ext = "webm";
             Path temp = Files.createTempFile(baseDir, prefix + "_", "." + ext);
             file.transferTo(temp);
-            log.info("Saved temp: {}", temp);
             return temp;
         } catch (IOException e) {
             throw new RuntimeException("임시 파일 저장 실패", e);

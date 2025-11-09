@@ -1,6 +1,7 @@
 package com.ucamp.project.service;
 
 
+import com.ucamp.project.dto.CreatePostCheckResponse;
 import com.ucamp.project.dto.PostCreateRequestDTO;
 import com.ucamp.project.dto.PostResponseDTO;
 import com.ucamp.project.dto.SimualtionPostResponse;
@@ -39,14 +40,31 @@ public class PostService {
 
     private final NotificationRepository notificationRepository;
 
+    private final PaymentsRepository paymentsRepository;
+
     private final SseComponent sseComponent;
 
     public List<Post> findAll() {
         return postRepository.findAll();
     }
 
-    public List<SimualtionPostResponse> simulGetPost(Long userId) {
-        List<Post> posts = postRepository.simulGetPost(userId);
+    public List<SimualtionPostResponse> simulGetPost(User user) {
+
+        // 결제 확인
+        Optional<Payments> payments = paymentsRepository.findByUserAndExpiredAtBeforeAndPaymentStatus(user, LocalDateTime.now(), "ACTIVE");
+
+        int max_count = 9;
+
+        if(payments.isPresent()){
+            max_count = 21;
+        }
+
+        Sort sorted = Sort.by(Sort.Direction.DESC, "postCreatedAt");
+
+        Pageable pageable = PageRequest.of(0, max_count, sorted);
+
+        Page<Post> posts = postRepository.simulGetPostPageable(user.getUserId(), pageable);
+
         List<SimualtionPostResponse> resp = new ArrayList<>();
         for (Post post : posts) {
             System.out.println("test : " + post.getPostId());
@@ -55,8 +73,23 @@ public class PostService {
         return resp;
     }
 
-    public List<PostResponseDTO> findAllByUserId(Long userId) {
-        List<Post> posts = postRepository.simulGetPost(userId);
+    public List<PostResponseDTO> findAllByUserId(User user) {
+
+        // 결제 확인
+        Optional<Payments> payments = paymentsRepository.findByUserAndExpiredAtBeforeAndPaymentStatus(user, LocalDateTime.now(), "ACTIVE");
+
+        int max_count = 9;
+
+        if(payments.isPresent()){
+            max_count = 21;
+        }
+
+        Sort sorted = Sort.by(Sort.Direction.DESC, "postCreatedAt");
+
+        Pageable pageable = PageRequest.of(0, max_count, sorted);
+
+        Page<Post> posts = postRepository.simulGetPostPageable(user.getUserId(), pageable);
+
         List<PostResponseDTO> resp = new ArrayList<>();
         for (Post post : posts) {
             System.out.println("test : " + post);
@@ -72,8 +105,17 @@ public class PostService {
 
         List<Post> postCount = postRepository.simulGetPost(user.getUserId());
 
-        if (postCount.size() == 10) {
-            throw new RuntimeException("질문셋은 최대 10개까지 생성됩니다.");
+        // 결제 확인
+        Optional<Payments> payments = paymentsRepository.findByUserAndExpiredAtBeforeAndPaymentStatus(user, LocalDateTime.now(), "ACTIVE");
+
+        int max_size = 9;
+
+        if (payments.isPresent()) {
+            max_size = 21;
+        }
+
+        if (postCount.size() == max_size) {
+            throw new RuntimeException("질문셋은 최대 " + max_size + "개까지 생성됩니다.");
         }
 
         //포스트 생성
@@ -112,6 +154,13 @@ public class PostService {
 
         boolean isMe = post.getUser().getUserId().equals(user.getUserId());
         boolean isPublic = post.getPostStatus().equals("N");
+        boolean isPayment = true;
+
+        //결제 정보
+        Optional<Payments> payments = paymentsRepository.findByUserAndExpiredAtBeforeAndPaymentStatus(user, LocalDateTime.now(), "ACTIVE");
+        if(post.getPostOtherWriter() != null && payments.isEmpty()){
+            isPayment = false;
+        }
 
         if (isPublic && !isMe) {
             throw new RuntimeException("비공개 질문셋입니다");
@@ -119,6 +168,7 @@ public class PostService {
 
         return PostResponseDTO.builder()
                 .postId(post.getPostId())
+                .userId(post.getUser().getUserId())
                 .job(postJobRepository.findByPostId(post.getPostId()))
                 .jobIds(postJobRepository.findByJobId(post.getPostId()))
                 .title(post.getPostTitle())
@@ -129,11 +179,10 @@ public class PostService {
                 .isPassed(post.getUser().getPassStatus() != null)
                 .isPublic(!isPublic)
                 .isMe(isMe)
+                .isPayment(isPayment)
                 .otherWriter(post.getPostOtherWriter() == null ? null : post.getPostOtherWriter().getNickname())
                 .qa(qaDtoList)
                 .build();
-
-
     }
 
     @Transactional
@@ -141,6 +190,12 @@ public class PostService {
 
         // 질문셋 조회
         Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("존재하지 않는 질문셋입니다."));
+
+        // 결제 확인
+        Optional<Payments> payments = paymentsRepository.findByUserAndExpiredAtBeforeAndPaymentStatus(user, LocalDateTime.now(), "ACTIVE");
+        if(post.getPostOtherWriter() != null && payments.isEmpty()){
+            throw new RuntimeException("스크랩해온 글을 수정하러면 구독이 필요합니다.");
+        }
 
         // 유저 체크
         if (!user.getUserId().equals(post.getUser().getUserId())) {
@@ -167,7 +222,6 @@ public class PostService {
         // 1. 삭제할 QaId 목록을 수집합니다.
         List<Long> incomingQaIds = new ArrayList<>();
         for (PostCreateRequestDTO.QaSet qaSet : req.getQaSets()) {
-            log.info("TTTTTEST : " + qaSet.getQaId());
             if (qaSet.getQaId() != null) {
                 incomingQaIds.add(qaSet.getQaId());
             }
@@ -251,6 +305,9 @@ public class PostService {
             case "bookcount":
                 sortColumn = "post_import_count";
                 break;
+            case "review":
+                sortColumn = "review"; // 예시
+                break;
             default:
                 sortColumn = "post_created_at"; // 기본값
         }
@@ -293,19 +350,33 @@ public class PostService {
             log.info("TEST : " + resp);
         }
 
+        // Page 구현
         return new PageImpl<>(dtoList, pageable, rawPage.getTotalElements());
     }
 
     @Transactional
     public Long copyPost(Long postId, User user) {
+
         // 사용자가 작성한 질문셋 개수 체크
         List<Post> postCount = postRepository.simulGetPost(user.getUserId());
-        if (postCount.size() == 10) {
-            throw new RuntimeException("질문셋은 최대 10개까지 생성됩니다.");
+
+        // 결제 확인
+        Optional<Payments> payments = paymentsRepository.findByUserAndExpiredAtBeforeAndPaymentStatus(user, LocalDateTime.now(), "ACTIVE");
+
+        int max_size = 9;
+
+        if (payments.isPresent()) {
+            max_size = 21;
+        }
+
+        if (postCount.size() == max_size) {
+            throw new RuntimeException("질문셋은 최대 " + max_size + "개까지 생성됩니다.");
         }
 
         // 원본 Post 조회
         Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("존재하지 않는 질문셋입니다."));
+
+        post.setCount(post.getCount() + 1);
 
         // 원본 POST 복사
         Post copiedPost = Post.builder().postTitle(post.getPostTitle()).postDescription(post.getPostDescription()).user(user).postOtherWriter(post.getUser()).postStatus("N").build();
@@ -367,7 +438,15 @@ public class PostService {
         return postRecive.getPostId();
     }
 
-    public int postCount(User user) {
-        return postRepository.countByUser(user);
+    public CreatePostCheckResponse postCreateCheck(User user) {
+
+        //결제 확인
+        Optional<Payments> payments = paymentsRepository.
+                findByUserAndExpiredAtBeforeAndPaymentStatus(user, LocalDateTime.now(), "ACTIVE");
+
+        return CreatePostCheckResponse.builder()
+                .count(postRepository.countByUser(user))
+                .payments(payments.isPresent())
+                .build();
     }
 }

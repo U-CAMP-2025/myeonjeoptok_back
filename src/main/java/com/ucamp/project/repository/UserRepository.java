@@ -44,35 +44,40 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUserId(Long userId);
 
     @Query(value = """
-        SELECT new com.ucamp.project.dto.UserResponse(
-            u.userId,
-            u.nickname,
-            u.email,
-            j.jobId,
-            j.jobName,
-            u.passStatus,
-            u.createdAt,
-            u.role,
-            s.simulationStatus,
-            s.simulationCompletedAt,
-            c.certStatus,
-            c.certReqDate,
-            c.certTrmtDate,
-            c.certFileUrl
-        )
-        FROM User u
-        LEFT JOIN u.job j
-        LEFT JOIN Certificate c ON c.certReqDate = (
-            SELECT MAX(c2.certReqDate)
-            FROM Certificate c2
-            WHERE c2.user.userId = u.userId
-        )
-        LEFT JOIN Simulation s ON s.simulationCompletedAt = (
-            SELECT MAX(s2.simulationCompletedAt)
-            FROM Simulation s2
-            WHERE s2.user.userId = u.userId
-        )
-        ORDER BY u.createdAt DESC
+    SELECT new com.ucamp.project.dto.UserResponse(
+        u.userId,
+        u.nickname,
+        u.email,
+        j.jobId,
+        j.jobName,
+        u.passStatus,
+        u.createdAt,
+        u.role,
+        s.simulationCompletedAt,
+        c.certStatus,
+        c.certReqDate,
+        c.certTrmtDate,
+        c.certFileUrl,
+        p.paymentStatus
+    )
+    FROM User u
+    LEFT JOIN u.job j
+    LEFT JOIN Certificate c ON c.certReqDate = (
+        SELECT MAX(c2.certReqDate)
+        FROM Certificate c2
+        WHERE c2.user.userId = u.userId
+    )
+    LEFT JOIN Simulation s ON s.simulationCompletedAt = (
+        SELECT MAX(s2.simulationCompletedAt)
+        FROM Simulation s2
+        WHERE s2.user.userId = u.userId
+    )
+    LEFT JOIN Payments p ON p.approvedAt = (
+        SELECT MAX(p2.approvedAt)
+        FROM Payments p2
+        WHERE p2.user.userId = u.userId
+    )
+    ORDER BY u.createdAt DESC
     """)
     Page<UserResponse> findAllWithCertAndSimulInfo(Pageable pageable);
 
@@ -141,6 +146,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
             JOIN job j ON u.job_id = j.job_id
             JOIN post p ON u.user_id = p.user_id
             GROUP BY u.user_id, u.nickname, u.pass_status, u.users_profile_image_url, j.job_name
+            HAVING SUM(p.post_import_count) > 0
             ORDER BY cnt DESC
             """, nativeQuery = true)
     List<Object[]> findAllBookmark();
@@ -167,5 +173,21 @@ public interface UserRepository extends JpaRepository<User, Long> {
              ORDER BY cnt DESC
             """, nativeQuery = true)
     List<Object[]> findAllPractice(String period);
+
+    @Query(value = """
+            SELECT
+                u.user_id AS userId,
+                u.nickname AS nickname,
+                u.email AS email,
+                u.users_profile_image_url AS usersProfileImageUrl,
+                u.pass_status AS passStatus,
+                j.job_name AS jobName,
+                p.payment_status AS paymentStatus
+            FROM users u
+            LEFT JOIN job j ON u.job_id = j.job_id
+            LEFT JOIN payments p ON u.user_id = p.user_id
+            WHERE u.user_id = :userId
+            """, nativeQuery = true)
+    UserDetailDto findUserDetailById(@Param("userId") Long userId);
 
 }

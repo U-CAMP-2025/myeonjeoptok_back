@@ -99,4 +99,10 @@ public class UserController {
         String updated = userService.updateUserStatus(uid, body.get("status"));
         return ResponseEntity.ok(Map.of("status", updated));
     }
+
+    @GetMapping("/{userId}/detail")
+    public ResponseEntity<UserDetailResponse> userDetail(@PathVariable Long userId) {
+        UserDetailResponse userDetail = userService.userDetail(userId);
+        return ResponseEntity.ok(userDetail);
+    }
 }

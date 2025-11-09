@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,6 +36,7 @@ public class SimulationController {
     private final SimulationRecordService simulationRecordService;
     private final TranscriptionService transcriptionService;
     private final AiFeedbackService aiFeedbackService;
+    private final CheckPaymentService checkPaymentService;
 
     @GetMapping
     public ApiResponse<Object> getPost(@AuthenticationPrincipal User user) {
@@ -49,7 +51,7 @@ public class SimulationController {
         ApiResponse<Object> resp = ApiResponse.builder()
                 .code(200)
                 .message("success")
-                .data(postService.simulGetPost(user.getUserId()))
+                .data(postService.simulGetPost(user))
                 .build();
         return resp;
     }
@@ -70,6 +72,22 @@ public class SimulationController {
         simulation.setUser(user);
 //        simulation.setUser(new User());
 //        simulation.getUser().setUserId(101l);
+
+        // 결제 유저 판단
+        boolean subscribed = checkPaymentService.isPayment(user.getUserId());
+        if (!subscribed) {
+            var now = java.time.LocalDateTime.now();
+            var startOfDay = now.withHour(0).withMinute(0).withSecond(0).withNano(0);
+            var endOfDay   = startOfDay.plusDays(1);
+            long doneToday = simulationService.countUserDailySuccess(user.getUserId(), startOfDay, endOfDay);
+            if (doneToday >= 3) {
+                return ApiResponse.builder()
+                        .code(403)
+                        .message("무료 이용자는 하루 3회까지만 면접 연습이 가능합니다. 구독 시 무제한 이용 가능합니다.")
+                        .build();
+            }
+        }
+
 
 
         ApiResponse<Object> resp = ApiResponse.builder()
@@ -97,52 +115,65 @@ public class SimulationController {
             @PathVariable Long qaId,
             @RequestPart("file") MultipartFile file
     ) {
-        // 1) 임시 저장
-        Path saved = tempFileService.saveToTemp(file, "sim" + simulationId + "_q" + qaId);
-
-        // 2) STT
-        String transcript = sttService.transcribe(saved);
-        transcript = (transcript == null) ? "" : transcript.trim();
-        // 3) Transcription upsert
-        Transcription tr = transcriptionService.upsert(simulationId, qaId, transcript);
-
-        // 2) 질문 조회 (서비스에서 상세 불러와 qaId 매칭)
-        String question = null;
+        log.info("[UPLOAD] simId={}, qaId={}, name={}, size={}, type={}",
+                simulationId, qaId, file.getOriginalFilename(), file.getSize(), file.getContentType());
         try {
-            var detail = simulationService.findDetail(simulationId);
-            question = detail.getPost().getQaList().stream()
-                    .filter(q -> qaId.equals(q.getQaId()))
-                    .findFirst()
-                    .map(q -> q.getQaQuestion())
-                    .orElse(null);
-        } catch (Exception e) {
-            log.warn("질문 조회 실패 simId={}, qaId={}", simulationId, qaId, e);
-        }
+            Path saved = tempFileService.saveToTemp(file, "sim" + simulationId + "_q" + qaId);
+            log.info("[UPLOAD] saved temp path={}", saved);
 
-// 3) 피드백 생성 & 저장
-        String feedback = "";
-        if (StringUtils.hasText(question) && StringUtils.hasText(transcript)) {
-            feedback = aiFeedbackService.generateFeedback(question.trim(), transcript);
-            if (StringUtils.hasText(feedback)) {
-                transcriptionService.updateFeedback(tr.getTrId(), feedback);
+            String transcript = sttService.transcribe(saved);
+            log.info("[STT] simId={}, qaId={}, transcript.len={}", simulationId, qaId,
+                    (transcript == null ? 0 : transcript.length()));
+            transcript = (transcript == null) ? "" : transcript.trim();
+
+            Transcription tr = transcriptionService.upsert(simulationId, qaId, transcript);
+            log.info("[UPSERT] trId={}, completedAt={}", tr.getTrId(), tr.getCompletedAt());
+
+            // 질문 조회
+            String question = null;
+            try {
+                var detail = simulationService.findDetail(simulationId);
+                question = detail.getPost().getQaList().stream()
+                        .filter(q -> qaId.equals(q.getQaId()))
+                        .findFirst()
+                        .map(q -> q.getQaQuestion())
+                        .orElse(null);
+                log.info("[QUESTION] found={}, len={}", (question != null), (question == null ? 0 : question.length()));
+            } catch (Exception e) {
+                log.warn("[QUESTION] failed to resolve question. simId={}, qaId={}, msg={}",
+                        simulationId, qaId, e.getMessage(), e);
             }
+
+            // 피드백
+            String feedback = "";
+            if (StringUtils.hasText(question) && StringUtils.hasText(transcript)) {
+                feedback = aiFeedbackService.generateFeedback(question.trim(), transcript);
+                if (StringUtils.hasText(feedback)) {
+                    transcriptionService.updateFeedback(tr.getTrId(), feedback);
+                } else {
+                }
+            } else {
+                log.warn("[FEEDBACK] skip. question or transcript empty. q.len={}, t.len={}",
+                        (question == null ? 0 : question.length()), transcript.length());
+            }
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("simulationId", simulationId);
+            data.put("qaId", qaId);
+            data.put("originalName", file.getOriginalFilename());
+            data.put("size", file.getSize());
+            data.put("contentType", file.getContentType());
+            data.put("transcript", transcript);
+            data.put("feedback", feedback);
+
+            return ApiResponse.builder().code(200).message("success").data(data).build();
+        } catch (Exception e) {
+            return ApiResponse.builder().code(500).message("upload_failed").data(Map.of(
+                    "simulationId", simulationId,
+                    "qaId", qaId,
+                    "error", e.getMessage()
+            )).build();
         }
-
-        // 6) 프론트 응답
-        Map<String, Object> data = new HashMap<>();
-        data.put("simulationId", simulationId);
-        data.put("qaId", qaId);
-        data.put("originalName", file.getOriginalFilename());
-        data.put("size", file.getSize());
-        data.put("contentType", file.getContentType());
-        data.put("transcript", transcript);
-        data.put("feedback", feedback);
-
-        return ApiResponse.builder()
-                .code(200)
-                .message("success")
-                .data(data)
-                .build();
     }
 
 
@@ -186,6 +217,13 @@ public class SimulationController {
         }
         simulationService.ensureOwner(simulationId, user.getUserId());
 
+        boolean payment = checkPaymentService.isPayment(user.getUserId());
+        if (!payment) {
+            return ApiResponse.builder()
+                    .code(403)
+                    .message("구독자만 수정이 가능합니다.")
+                    .build();
+        }
         var finalList = simulationService.finalizeReplaceAndDelete(simulationId, request);
 
         var respQaList = finalList.stream().map(q ->

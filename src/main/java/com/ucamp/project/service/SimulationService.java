@@ -29,6 +29,7 @@ public class SimulationService {
     private final QaRepository qaRepository;
     private final TranscriptionRepository  transcriptionRepository;
     private final PostRepository postRepository;
+    private final CheckPaymentService checkPaymentService;
 
     public List<Simulation> findAll(){
         return simulationRepository.findAll();
@@ -47,6 +48,7 @@ public class SimulationService {
         }
     }
 
+    @Transactional(readOnly = true)
     public SimulationDetailResponse findDetail(Long simulationId) {
         Simulation sim = simulationRepository.findBySimulationId(simulationId)
                 .orElseThrow(() -> new IllegalArgumentException("Simulation not found: " + simulationId));
@@ -85,12 +87,32 @@ public class SimulationService {
                 .build();
     }
 
+    // 만료 카운티
+    @Transactional(readOnly = true)
+    public long countUserDailySuccess(Long userId, LocalDateTime start, LocalDateTime end) {
+        return simulationRepository.countUserDailySimulation(userId, start, end);
+    }
+
+    @Transactional(readOnly = true)
     public SimulationDetailResponse findStart(Long simulationId) {
         Simulation sim = simulationRepository.findBySimulationId(simulationId)
                 .orElseThrow(() -> new IllegalArgumentException("Simulation not found: " + simulationId));
         if(!sim.getSimulationStatus().equals("INPROGRESS")){
             throw new RuntimeException("접근 불가");
         }
+
+        // 결제 유저 판단
+        Long userId = sim.getUser().getUserId();
+        boolean paymentUser = checkPaymentService.isPayment(userId);
+        if(!paymentUser){
+            LocalDateTime startOfDay = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
+            LocalDateTime endOfDay = startOfDay.plusDays(1);
+            long done = simulationRepository.countUserDailySimulation(userId, startOfDay,endOfDay);
+            if(done >= 3){
+                throw new RuntimeException("일반 유저는 하루 3회까지만 연습이 가능합니다");
+            }
+        }
+
         // interviewer 매핑
         Interviewer interviewer = sim.getInterviewer();
         InterviewerDto interviewerDto = InterviewerDto.builder()
@@ -134,8 +156,14 @@ public class SimulationService {
     public List<Qa> finalizeReplaceAndDelete(Long simulationId, FinalizeRequest req) {
         var sim = simulationRepository.findBySimulationId(simulationId)
                 .orElseThrow(() -> new IllegalArgumentException("Simulation not found: " + simulationId));
+
         var post = sim.getPost();
         if (post == null) throw new IllegalStateException("Simulation has no Post");
+
+        boolean payment = checkPaymentService.isPayment(sim.getUser().getUserId());
+        if (!payment) {
+            throw new RuntimeException("구독자만 수정이 가능합니다.");
+        }
 
         // Post의 QA 맵
         Map<Long, Qa> qaMap = post.getQaList().stream()
@@ -220,22 +248,33 @@ public class SimulationService {
         }
     }
 
+    @Transactional(readOnly = true)
     public boolean transCheck(Long simulationId) {
-        int i = 0;
-        Simulation simulation = simulationRepository.findById(simulationId)
+        Simulation sim = simulationRepository.findById(simulationId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 시뮬이 존재하지 않습니다."));
-        while (i++ < 36){
-            long trCount = transcriptionRepository.countBySimulation(simulation);
-            if(simulation.getSimulationQACount().equals(trCount)){
-                return true;
+
+        // 기대 개수: simulationQACount 없으면 Post의 QA 개수로 보정
+        long expected = Optional.ofNullable(sim.getSimulationQACount())
+                .map(Long::valueOf)
+                .orElseGet(() -> (long) sim.getPost().getQaList().size());
+        System.out.println("변환 갯수 세는중: " + expected);
+
+        int tries = 0;
+        while (tries++ < 60) { // 1초 간격 × 180 = 3분 (필요시 조정)
+            long stt = transcriptionRepository.countBySimulation_SimulationId(simulationId);
+            long fb  = transcriptionRepository.countFeedbackIncludingSilent(simulationId);
+            System.out.println("STT count=" + stt + ", FB count=" + fb + ", expected=" + expected);
+
+            if (stt <= fb) {
+                return true; // STT & 피드백 모두 완료
             }
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
+
+            try { Thread.sleep(1000); }
+            catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return false;
             }
         }
-        return false;
+        return false; // 타임아웃
     }
 }

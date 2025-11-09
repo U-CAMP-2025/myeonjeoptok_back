@@ -6,8 +6,10 @@ import com.ucamp.project.dto.UserResponse;
 import com.ucamp.project.dto.UserWithCertDTO;
 import com.ucamp.project.model.User;
 import com.ucamp.project.repository.JobRepository;
+import com.ucamp.project.repository.PostRepository;
 import com.ucamp.project.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -17,12 +19,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 import java.time.LocalDateTime;
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
         public class UserService {
             private final UserRepository userRepository;
             private final JobRepository jobRepository;
+            private final PostRepository postRepository;
+            private final CheckPaymentService checkPaymentService;
 
             public List<UserResponse> findAll() {
                 List<User> users = userRepository.findAll();
@@ -47,11 +51,15 @@ import java.time.LocalDateTime;
                 .build();
         User saveUser = userRepository.save(user);
 
+        boolean isPaymentUser = checkPaymentService.isPayment(saveUser.getUserId());
+        log.info("사용자 결제 여부(userId={}): {}", saveUser.getUserId(), isPaymentUser);
+        System.out.println("사용자 결제 여부: " + isPaymentUser);
         return SignupResponse.builder()
                 .userId(saveUser.getUserId())
                 .nickname(saveUser.getNickname())
                 .email(saveUser.getEmail())
                 .jobId(saveUser.getJob().getJobId())
+                .payment(isPaymentUser)
                 .kakaoId(saveUser.getKakaoId())
                 .build();
     }
@@ -147,5 +155,49 @@ import java.time.LocalDateTime;
         user.setStatus(normalized);
         userRepository.save(user);
         return user.getStatus();
+    }
+
+    public UserDetailResponse userDetail(Long userId){
+        UserDetailDto userDetail = userRepository.findUserDetailById(userId);
+        List<Object[]> postRows = postRepository.findPostDetailById(userId);
+
+        List<PostDetailDto> postDetail = postRows.stream()
+                .map(row -> {
+                    Long currentPostId = ((Number) row[0]).longValue();
+
+                    // 💡 해당 postId로 job 조회
+                    List<Object[]> jobRows = jobRepository.findAllById(currentPostId);
+
+                    List<JobDetailDto> jobDetail = jobRows.stream()
+                            .map(row2 -> JobDetailDto.builder()
+                                    .jobId(((Number) row2[0]).longValue())
+                                    .jobName((String) row2[1])
+                                    .build())
+                            .toList();
+
+                    return PostDetailDto.builder()
+                            .postId(currentPostId)
+                            .postTitle((String) row[1])
+                            .postDescription((String) row[2])
+                            .bookmarkCount(row[3] != null ? ((Number) row[3]).longValue() : 0L)
+                            .postCreatedAt((String) row[4])
+                            .reviewCount(row[5] != null ? ((Number) row[5]).longValue() : 0L)
+                            .jobs(jobDetail)
+                            .build();
+                })
+                .toList();
+
+
+        UserDetailResponse response = new UserDetailResponse();
+        response.setUserId(userDetail.getUserId());
+        response.setNickname(userDetail.getNickname());
+        response.setEmail(userDetail.getEmail());
+        response.setUserImageUrl(userDetail.getUsersProfileImageUrl());
+        response.setPassStatus(userDetail.getPassStatus());
+        response.setJobName(userDetail.getJobName());
+        response.setPaymentStatus(userDetail.getPaymentStatus());
+        response.setPosts(postDetail);
+
+        return response;
     }
 }
