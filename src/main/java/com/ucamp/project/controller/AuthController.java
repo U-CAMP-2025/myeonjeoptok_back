@@ -21,6 +21,7 @@ import com.ucamp.project.util.CookieUtils;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
@@ -97,12 +98,23 @@ public class AuthController {
 
             // 재가입 플로우
             // 세션에 카카오 정보 적재 후 /signup
+
+            LocalDateTime now = LocalDateTime.now();
+            Duration duration = Duration.between(u.getCreatedAt(), now);
+
             if ("DISABLED".equalsIgnoreCase(u.getStatus())) {
+
+                String redirectUrl = clientOrigin + "/signup";
+
+                if(duration.toHours() < 24){
+                    return ResponseEntity.status(302).location(URI.create(redirectUrl+"?error="+duration.toHours())).build();
+                }
+
                 session.setAttribute("P_KAKAO_ID", kakaoId);
                 session.setAttribute("P_EMAIL", email);
                 session.setAttribute("P_PROFILE", profile);
 
-                String redirectUrl = clientOrigin + "/signup";
+
                 return ResponseEntity.status(302).location(URI.create(redirectUrl)).build();
             }
 
@@ -167,7 +179,7 @@ public class AuthController {
             u.setRole("USER");
             u.setStatus("NEW");
             u.setEmail(email);
-            u.setCreatedAt(u.getCreatedAt() == null ? LocalDateTime.now() : u.getCreatedAt());
+            u.setCreatedAt(LocalDateTime.now());
             users.save(u);
         } else {
             // 최초가입
