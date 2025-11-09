@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -59,4 +60,16 @@ public interface SimulationRepository extends JpaRepository<Simulation, Long> {
       AND s.SIMULATION_CREATED_AT < (SYSDATE - INTERVAL '2' HOUR)
     """, nativeQuery = true)
     int deleteInProgressOrIncomplete();
+
+    @Query("""
+    SELECT COUNT(s) FROM Simulation s 
+    where s.user.userId = :userId
+        and s.simulationCompletedAt between :start and :end
+        and s.simulationStatus = 'SUCCESS'
+    """)
+    long countUserDailySimulation(
+            @Param("userId") Long userId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
 }

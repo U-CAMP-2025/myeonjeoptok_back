@@ -29,6 +29,7 @@ public class SimulationService {
     private final QaRepository qaRepository;
     private final TranscriptionRepository  transcriptionRepository;
     private final PostRepository postRepository;
+    private final CheckPaymentService checkPaymentService;
 
     public List<Simulation> findAll(){
         return simulationRepository.findAll();
@@ -86,6 +87,12 @@ public class SimulationService {
                 .build();
     }
 
+    // 만료 카운티
+    @Transactional(readOnly = true)
+    public long countUserDailySuccess(Long userId, LocalDateTime start, LocalDateTime end) {
+        return simulationRepository.countUserDailySimulation(userId, start, end);
+    }
+
     @Transactional(readOnly = true)
     public SimulationDetailResponse findStart(Long simulationId) {
         Simulation sim = simulationRepository.findBySimulationId(simulationId)
@@ -93,6 +100,19 @@ public class SimulationService {
         if(!sim.getSimulationStatus().equals("INPROGRESS")){
             throw new RuntimeException("접근 불가");
         }
+
+        // 결제 유저 판단
+        Long userId = sim.getUser().getUserId();
+        boolean paymentUser = checkPaymentService.isPayment(userId);
+        if(!paymentUser){
+            LocalDateTime startOfDay = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
+            LocalDateTime endOfDay = startOfDay.plusDays(1);
+            long done = simulationRepository.countUserDailySimulation(userId, startOfDay,endOfDay);
+            if(done >= 3){
+                throw new RuntimeException("일반 유저는 하루 3회까지만 연습이 가능합니다");
+            }
+        }
+
         // interviewer 매핑
         Interviewer interviewer = sim.getInterviewer();
         InterviewerDto interviewerDto = InterviewerDto.builder()

@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -21,4 +22,9 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     List<Notification> findAllByUserId(@Param("userId") Long userId);
 
     Page<Notification> findByUserUserId(Long userId, Pageable pageable);
+
+    boolean existsByUser_UserIdAndNotiTypeAndNotiContentAndNotiCreatedAtBetween(
+            Long userId, String notiType, String notiContent,
+            LocalDateTime startOfDay, LocalDateTime endOfDay
+    );
 }

@@ -12,4 +12,5 @@ public class SignupResponse {
     private String email;
     private Long jobId;
     private String kakaoId;
+    private boolean payment;
 }
