@@ -84,7 +84,7 @@ public class OcrOpenService {
               "messages": [
                 {
                   "role": "system",
-                  "content": "너는 한국어 문서를 읽을 수 있는 OCR 모델이다. 이미지의 모든 글자를 인식해라. 사업자등록번호가 있다면 반드시 포함시켜라."
+                  "content": "너는 한국어 문서를 읽을 수 있는 OCR 모델이다. 숫자를 포함한 모든 문자를 인식하라. '결과는 다음과 같습니다' 따위의 안내 문구는 필요없이, 추출 결과만 표시하라."
                 },
                 {
                   "role": "user",
@@ -113,6 +113,17 @@ public class OcrOpenService {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(result);
             String text = root.path("choices").get(0).path("message").path("content").asText().trim();
+            // OpenAI가 “이미지에 텍스트가 없습니다”류의 문장을 반환한 경우
+            if (text.toLowerCase().contains("텍스트가 포함되어 있지") ||
+                    text.toLowerCase().contains("ocr 분석을 수행할 수") ||
+                    text.toLowerCase().contains("이미지") ||
+                    text.toLowerCase().contains("text") && text.toLowerCase().contains("없")) {
+                responseMap.put("text", "(텍스트 인식 불가)");
+                responseMap.put("status", "fail");
+                responseMap.put("bizNum", "NOT_FOUND");
+                responseMap.put("verfRes", Map.of("data", Collections.emptyList()));
+                return responseMap; // ✅ 조기 반환
+            }
             responseMap.put("text", text);
             log.info("OCR 인식 텍스트:\n{}", text);
 
