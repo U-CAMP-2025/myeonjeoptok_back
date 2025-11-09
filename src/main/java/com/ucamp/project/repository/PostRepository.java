@@ -18,6 +18,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT p FROM Post p WHERE user.userId = :userId")
     List<Post> simulGetPost(@Param("userId") Long userId);
 
+    @Query("SELECT p FROM Post p WHERE p.user.userId = :userId")
+    Page<Post> simulGetPostPageable(@Param("userId") Long userId, Pageable pageable);
+
 
     Optional<Post> findByUserUserIdAndPostId(Long userId, Long postId);
 
