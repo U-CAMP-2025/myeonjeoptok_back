@@ -124,6 +124,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             FROM post p
             LEFT JOIN review r ON p.post_id = r.post_id
             WHERE p.user_id = :userId
+            AND p.post_status = 'Y'
             GROUP BY p.post_id, p.post_title, p.post_description, p.post_import_count, p.post_created_at
             ORDER BY p.post_created_at DESC
             """, nativeQuery = true)
