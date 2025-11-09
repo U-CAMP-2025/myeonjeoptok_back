@@ -175,7 +175,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<Object[]> findAllPractice(String period);
 
     @Query(value = """
-            SELECT
+            SELECT DISTINCT
                 u.user_id AS userId,
                 u.nickname AS nickname,
                 u.email AS email,

@@ -3,6 +3,7 @@ package com.ucamp.project.service;
 import com.ucamp.project.model.Payments;
 import com.ucamp.project.model.User;
 import com.ucamp.project.repository.PaymentsRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONObject;
@@ -26,11 +27,26 @@ public class PaymentsService {
 
     // 특정 유저의 모든 결제 내역
     public List<Payments> findAllByUserId(Long userId) {
-        return paymentsRepository.findByUser_UserIdOrderByApprovedAtDesc(userId);
+        LocalDateTime now = LocalDateTime.now();
+
+        // 해당 유저의 결제 내역 전부 조회 (최신순)
+        List<Payments> payments = paymentsRepository.findByUser_UserIdOrderByExpiredAtDesc(userId);
+
+        // 만료일 지난 결제는 DISABLED 처리
+        payments.stream()
+                .filter(p -> p.getExpiredAt().isBefore(now))
+                .filter(p -> !"DISABLED".equals(p.getPaymentStatus()))
+                .forEach(p -> p.setPaymentStatus("DISABLED"));
+
+        // 변경사항 저장
+        paymentsRepository.saveAll(payments);
+
+        return payments;
     }
 
     // 결제 완료 데이터 저장
     public Payments savePaymentFromToss(JSONObject tossResponse, Long userId) {
+
         // 필드 추출
         String orderId = (String) tossResponse.get("orderId");
         String paymentKey = (String) tossResponse.get("paymentKey");
@@ -52,4 +68,57 @@ public class PaymentsService {
 
         return paymentsRepository.save(payment);
     }
+
+    // 결제 완료 데이터 저장
+    @Transactional
+    public Payments createPayment(JSONObject tossResponse, Long userId) {
+
+        // ===== 1️⃣ 기본 필드 추출 =====
+        String orderId = (String) tossResponse.get("orderId");
+        String paymentKey = (String) tossResponse.get("paymentKey");
+        Long totalAmount = Long.valueOf(tossResponse.getAsNumber("totalAmount").longValue());
+
+        // 승인일자 파싱
+        String approvedAtStr = (String) tossResponse.get("approvedAt");
+        LocalDateTime approvedAt = LocalDateTime.parse(approvedAtStr, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+        LocalDateTime now = LocalDateTime.now();
+
+        // ===== 2️⃣ 유저 최신 결제 조회 =====
+        Payments latest = paymentsRepository.findTopByUser_UserIdOrderByExpiredAtDesc(userId).orElse(null);
+
+        LocalDateTime startedAt;
+        LocalDateTime expiredAt;
+        // String status;
+
+        // ===== 3️⃣ 신규 / 갱신 분기 =====
+        if (latest != null && !latest.getExpiredAt().isBefore(now.minusDays(30))) {
+            // ✅ 갱신
+            startedAt = latest.getApprovedAt();          // 기존 결제 승인일 유지
+            expiredAt = latest.getExpiredAt().plusMonths(1); // 만료일 연장
+            // status = "RENEWED";
+            log.info("🔁 구독 갱신 처리됨");
+        } else {
+            // ✅ 신규
+            startedAt = now;
+            expiredAt = now.plusMonths(1);
+            // status = "NEW";
+            log.info("🆕 신규 결제 처리됨");
+        }
+
+        // ===== 4️⃣ 엔티티 생성 =====
+        Payments payment = Payments.builder()
+                .user(User.builder().userId(userId).build())
+                .orderId(orderId)
+                .paymentKey(paymentKey)
+                .totalAmount(totalAmount)
+                .approvedAt(approvedAt)
+                .startedAt(startedAt)
+                .expiredAt(expiredAt)
+                .paymentStatus("ACTIVE")
+                .build();
+
+        // ===== 5️⃣ 저장 =====
+        return paymentsRepository.save(payment);
+    }
+
 }

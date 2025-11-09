@@ -42,5 +42,7 @@ public interface PaymentsRepository extends JpaRepository<Payments, Long> {
 
     Optional<Payments> findTopByUser_UserIdOrderByApprovedAtDesc(Long userId);
 
-    List<Payments> findByUser_UserIdOrderByApprovedAtDesc(Long userId);
+    List<Payments> findByUser_UserIdOrderByExpiredAtDesc(Long userId);
+
+    Optional<Payments> findTopByUser_UserIdOrderByExpiredAtDesc(Long userId);
 }
