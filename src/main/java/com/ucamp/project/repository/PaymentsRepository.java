@@ -4,6 +4,7 @@ import com.ucamp.project.model.Payments;
 import com.ucamp.project.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -23,8 +24,20 @@ public interface PaymentsRepository extends JpaRepository<Payments, Long> {
     """)
     boolean hasActivePayment(Long userId, LocalDateTime now);
 
-    List<Payments> findByPaymentStatusAndExpiredAtBetween(
-            String paymentStatus, LocalDateTime from, LocalDateTime to
+    @Query(value = "SELECT p.* FROM payment p " +
+            "WHERE p.payment_status = 'ACTIVE' " +
+            "AND p.expired_at BETWEEN :startDate AND :endDate " +
+            "AND p.expired_at = (" +
+            "    SELECT MAX(p2.expired_at) " +
+            "    FROM payment p2 " +
+            "    WHERE p2.user_id = p.user_id " +
+            "    AND p2.payment_status = 'ACTIVE' " +
+            "    AND p2.expired_at BETWEEN :startDate AND :endDate" +
+            ")",
+            nativeQuery = true)
+    List<Payments> findActivePaymentsWithMaxExpirationNative(
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
     );
 
     Optional<Payments> findTopByUser_UserIdOrderByApprovedAtDesc(Long userId);
