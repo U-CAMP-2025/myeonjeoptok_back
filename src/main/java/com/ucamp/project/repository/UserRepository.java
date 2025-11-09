@@ -141,6 +141,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
             JOIN job j ON u.job_id = j.job_id
             JOIN post p ON u.user_id = p.user_id
             GROUP BY u.user_id, u.nickname, u.pass_status, u.users_profile_image_url, j.job_name
+            HAVING SUM(p.post_import_count) > 0
             ORDER BY cnt DESC
             """, nativeQuery = true)
     List<Object[]> findAllBookmark();
