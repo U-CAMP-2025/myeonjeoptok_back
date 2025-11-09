@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -76,10 +77,7 @@ public class SimulationController {
         // 결제 유저 판단
         boolean subscribed = checkPaymentService.isPayment(user.getUserId());
         if (!subscribed) {
-            var now = java.time.LocalDateTime.now();
-            var startOfDay = now.withHour(0).withMinute(0).withSecond(0).withNano(0);
-            var endOfDay   = startOfDay.plusDays(1);
-            long doneToday = simulationService.countUserDailySuccess(user.getUserId(), startOfDay, endOfDay);
+            long doneToday = simulationService.countUserDailySuccessByUsage(user.getUserId(), LocalDate.now());
             if (doneToday >= 3) {
                 return ApiResponse.builder()
                         .code(403)

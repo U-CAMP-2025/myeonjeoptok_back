@@ -2,23 +2,16 @@ package com.ucamp.project.service;
 
 
 import com.ucamp.project.dto.*;
-import com.ucamp.project.model.Interviewer;
-import com.ucamp.project.model.Post;
-import com.ucamp.project.model.Qa;
-import com.ucamp.project.model.Simulation;
-import com.ucamp.project.repository.PostRepository;
-import com.ucamp.project.repository.QaRepository;
-import com.ucamp.project.repository.SimulationRepository;
-import com.ucamp.project.repository.TranscriptionRepository;
+import com.ucamp.project.model.*;
+import com.ucamp.project.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -30,6 +23,7 @@ public class SimulationService {
     private final TranscriptionRepository  transcriptionRepository;
     private final PostRepository postRepository;
     private final CheckPaymentService checkPaymentService;
+    private final SimulationUsageRepository simulationUsageRepository;
 
     public List<Simulation> findAll(){
         return simulationRepository.findAll();
@@ -87,12 +81,6 @@ public class SimulationService {
                 .build();
     }
 
-    // 만료 카운티
-    @Transactional(readOnly = true)
-    public long countUserDailySuccess(Long userId, LocalDateTime start, LocalDateTime end) {
-        return simulationRepository.countUserDailySimulation(userId, start, end);
-    }
-
     @Transactional(readOnly = true)
     public SimulationDetailResponse findStart(Long simulationId) {
         Simulation sim = simulationRepository.findBySimulationId(simulationId)
@@ -103,12 +91,12 @@ public class SimulationService {
 
         // 결제 유저 판단
         Long userId = sim.getUser().getUserId();
-        boolean paymentUser = checkPaymentService.isPayment(userId);
-        if(!paymentUser){
-            LocalDateTime startOfDay = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
-            LocalDateTime endOfDay = startOfDay.plusDays(1);
-            long done = simulationRepository.countUserDailySimulation(userId, startOfDay,endOfDay);
-            if(done >= 3){
+        if (!checkPaymentService.isPayment(userId)) {
+            long doneToday = simulationUsageRepository.countByUser_UserIdAndSimDate(
+                    userId,
+                    java.time.LocalDate.now()
+            );
+            if (doneToday >= 3) {
                 throw new RuntimeException("일반 유저는 하루 3회까지만 연습이 가능합니다");
             }
         }
@@ -236,7 +224,20 @@ public class SimulationService {
         simul.setSimulationCompletedAt(LocalDateTime.now());
         simul.setSimulationStatus("SUCCESS");
 
+        Long userId = simul.getUser().getUserId();
+        if (!simulationUsageRepository.existsByUser_UserIdAndSimulationId(userId, simulationId)) {
+            simulationUsageRepository.save(SimulationUsage.builder()
+                    .user(simul.getUser())
+                    .simulationId(simulationId)
+                    .simDate(simul.getSimulationCompletedAt().toLocalDate())
+                    .build());
+        }
         return true;
+    }
+
+    @Transactional(readOnly = true)
+    public long countUserDailySuccessByUsage(Long userId, LocalDate day) {
+        return simulationUsageRepository.countByUser_UserIdAndSimDate(userId, day);
     }
 
     @Transactional
