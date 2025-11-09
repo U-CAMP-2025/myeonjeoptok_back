@@ -45,7 +45,7 @@ public class Payments {
     private Long totalAmount;          // 결제 금액
 
     @Column(name = "payment_status", length = 10)
-    @ColumnDefault("'ACTIVE'")
+    @ColumnDefault("'ACTIVE'") // disabled
     private String paymentStatus;
 
     @Transient

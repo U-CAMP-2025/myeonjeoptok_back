@@ -9,6 +9,7 @@ import com.ucamp.project.repository.JobRepository;
 import com.ucamp.project.repository.PostRepository;
 import com.ucamp.project.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -18,13 +19,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 import java.time.LocalDateTime;
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
         public class UserService {
             private final UserRepository userRepository;
             private final JobRepository jobRepository;
             private final PostRepository postRepository;
+            private final CheckPaymentService checkPaymentService;
 
             public List<UserResponse> findAll() {
                 List<User> users = userRepository.findAll();
@@ -49,11 +51,15 @@ import java.time.LocalDateTime;
                 .build();
         User saveUser = userRepository.save(user);
 
+        boolean isPaymentUser = checkPaymentService.isPayment(saveUser.getUserId());
+        log.info("사용자 결제 여부(userId={}): {}", saveUser.getUserId(), isPaymentUser);
+        System.out.println("사용자 결제 여부: " + isPaymentUser);
         return SignupResponse.builder()
                 .userId(saveUser.getUserId())
                 .nickname(saveUser.getNickname())
                 .email(saveUser.getEmail())
                 .jobId(saveUser.getJob().getJobId())
+                .payment(isPaymentUser)
                 .kakaoId(saveUser.getKakaoId())
                 .build();
     }
