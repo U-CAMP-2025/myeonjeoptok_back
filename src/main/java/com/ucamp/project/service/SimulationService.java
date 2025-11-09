@@ -156,8 +156,14 @@ public class SimulationService {
     public List<Qa> finalizeReplaceAndDelete(Long simulationId, FinalizeRequest req) {
         var sim = simulationRepository.findBySimulationId(simulationId)
                 .orElseThrow(() -> new IllegalArgumentException("Simulation not found: " + simulationId));
+
         var post = sim.getPost();
         if (post == null) throw new IllegalStateException("Simulation has no Post");
+
+        boolean payment = checkPaymentService.isPayment(sim.getUser().getUserId());
+        if (!payment) {
+            throw new RuntimeException("구독자만 수정이 가능합니다.");
+        }
 
         // Post의 QA 맵
         Map<Long, Qa> qaMap = post.getQaList().stream()
