@@ -25,14 +25,13 @@ public class NotiScheduler {
     private final NotificationRepository notificationRepository;
     private final SseComponent sseComponent;
 
-    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 0 0 * * *")
     public void pushDday() {
-        ZoneId kst = ZoneId.of("Asia/Seoul");
-        LocalDate today = LocalDate.now(kst);
+        LocalDate today = LocalDate.now();
 
         // 오늘 기준 D-1 ~ D-7 범위
-        LocalDateTime from = today.plusDays(1).atStartOfDay();          // 내일 00:00
-        LocalDateTime to   = today.plusDays(7).atTime(23, 59, 59);      // 7일 후 23:59:59
+        LocalDateTime from = today.plusDays(1).atStartOfDay();
+        LocalDateTime to   = today.plusDays(7).atTime(23, 59, 59);
 
         List<Payments> targets =
                 paymentsRepository.findByPaymentStatusAndExpiredAtBetween("ACTIVE", from, to);
@@ -40,18 +39,18 @@ public class NotiScheduler {
         int saved = 0, skipped = 0;
 
         for (Payments p : targets) {
-            LocalDate expiryDate = p.getExpiredAt().atZone(kst).toLocalDate();
-            long daysLeft = ChronoUnit.DAYS.between(today, expiryDate); // 1..7
+            LocalDate expiryDate = p.getExpiredAt().toLocalDate();
+            long daysLeft = ChronoUnit.DAYS.between(today, expiryDate);
 
             if (daysLeft < 1 || daysLeft > 7) {
                 skipped++;
                 continue;
             }
 
-            String type = "SUBSCRIPTION_EXPIRY";
+            String type = "PAY_EXPIRY";
             String content = String.format("구독 만료 %d일 전입니다. (만료일: %s)", daysLeft, expiryDate);
 
-            // 중복 방지: 같은 날 같은 내용 있으면 스킵
+            // 오늘 같은 내용의 알림이 이미 있으면 스킵
             LocalDateTime startOfDay = today.atStartOfDay();
             LocalDateTime endOfDay   = today.atTime(23, 59, 59);
 
@@ -70,12 +69,12 @@ public class NotiScheduler {
                     .notiType(type)
                     .notiContent(content)
                     .notiRead("N")
-                    .notiCreatedAt(LocalDateTime.now(kst))
+                    .notiCreatedAt(LocalDateTime.now()) // 시스템 로컬시간 기준
                     .build();
             notificationRepository.save(noti);
             saved++;
 
-            // 실시간 신호 (프론트는 이 신호를 받으면 /api/notifications 재조회)
+            // SSE 신호 전송
             sseComponent.eventtrigger(p.getUser().getUserId());
         }
 
