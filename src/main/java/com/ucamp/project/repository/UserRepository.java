@@ -44,35 +44,40 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUserId(Long userId);
 
     @Query(value = """
-        SELECT new com.ucamp.project.dto.UserResponse(
-            u.userId,
-            u.nickname,
-            u.email,
-            j.jobId,
-            j.jobName,
-            u.passStatus,
-            u.createdAt,
-            u.role,
-            s.simulationStatus,
-            s.simulationCompletedAt,
-            c.certStatus,
-            c.certReqDate,
-            c.certTrmtDate,
-            c.certFileUrl
-        )
-        FROM User u
-        LEFT JOIN u.job j
-        LEFT JOIN Certificate c ON c.certReqDate = (
-            SELECT MAX(c2.certReqDate)
-            FROM Certificate c2
-            WHERE c2.user.userId = u.userId
-        )
-        LEFT JOIN Simulation s ON s.simulationCompletedAt = (
-            SELECT MAX(s2.simulationCompletedAt)
-            FROM Simulation s2
-            WHERE s2.user.userId = u.userId
-        )
-        ORDER BY u.createdAt DESC
+    SELECT new com.ucamp.project.dto.UserResponse(
+        u.userId,
+        u.nickname,
+        u.email,
+        j.jobId,
+        j.jobName,
+        u.passStatus,
+        u.createdAt,
+        u.role,
+        s.simulationCompletedAt,
+        c.certStatus,
+        c.certReqDate,
+        c.certTrmtDate,
+        c.certFileUrl,
+        p.paymentStatus
+    )
+    FROM User u
+    LEFT JOIN u.job j
+    LEFT JOIN Certificate c ON c.certReqDate = (
+        SELECT MAX(c2.certReqDate)
+        FROM Certificate c2
+        WHERE c2.user.userId = u.userId
+    )
+    LEFT JOIN Simulation s ON s.simulationCompletedAt = (
+        SELECT MAX(s2.simulationCompletedAt)
+        FROM Simulation s2
+        WHERE s2.user.userId = u.userId
+    )
+    LEFT JOIN Payments p ON p.approvedAt = (
+        SELECT MAX(p2.approvedAt)
+        FROM Payments p2
+        WHERE p2.user.userId = u.userId
+    )
+    ORDER BY u.createdAt DESC
     """)
     Page<UserResponse> findAllWithCertAndSimulInfo(Pageable pageable);
 
