@@ -51,7 +51,7 @@ public class SimulationController {
         ApiResponse<Object> resp = ApiResponse.builder()
                 .code(200)
                 .message("success")
-                .data(postService.simulGetPost(user.getUserId()))
+                .data(postService.simulGetPost(user))
                 .build();
         return resp;
     }

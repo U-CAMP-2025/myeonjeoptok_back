@@ -23,7 +23,7 @@ public class PostController {
     @GetMapping("/my")
     public ApiResponse<?> myPosts(@AuthenticationPrincipal User user){
 
-        return ApiResponse.builder().code(200).message("success").data(postService.findAllByUserId(user.getUserId())).build();
+        return ApiResponse.builder().code(200).message("success").data(postService.findAllByUserId(user)).build();
     }
 
     @PostMapping("/search")
@@ -68,6 +68,6 @@ public class PostController {
 
     @GetMapping("/count")
     public ApiResponse<?> countPost(@AuthenticationPrincipal User user){
-        return ApiResponse.builder().code(200).message("success").data(postService.postCount(user)).build();
+        return ApiResponse.builder().code(200).message("success").data(postService.postCreateCheck(user)).build();
     }
 }
