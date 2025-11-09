@@ -22,21 +22,50 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/payment")
 @Slf4j
 @RequiredArgsConstructor
-public class WidgetController {
+public class PaymentsController {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private final PaymentsService paymentsService;
 
-    // 로그인한 사용자의 최근 결제 내역 조회
+    /**
+     * 로그인한 유저의 결제 내역 전체 조회
+     */
+    @GetMapping("/history")
+    public ResponseEntity<?> getMyPaymentHistory(@AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "로그인이 필요한 요청입니다."));
+        }
+
+        List<Payments> payments = paymentsService.findAllByUserId(user.getUserId());
+        if (payments.isEmpty()) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+
+        List<PaymentDTO> responses = payments.stream()
+                .sorted(Comparator.comparing(Payments::getApprovedAt).reversed())
+                .map(p -> PaymentDTO.builder()
+                        .orderId(p.getOrderId())
+                        .paymentKey(p.getPaymentKey())
+                        .approvedAt(p.getApprovedAt())
+                        .expiredAt(p.getExpiredAt())
+                        .totalAmount(p.getTotalAmount())
+                        .paymentStatus(p.getPaymentStatus())
+                        .build())
+                .toList();
+
+        return ResponseEntity.ok(responses);
+    }
+
+    // 로그인한 사용자의 최근 결제 내역 조회 (단일)
+    @GetMapping("/history/me")
     public ResponseEntity<?> getMyLatestPayment(@AuthenticationPrincipal User user) {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
