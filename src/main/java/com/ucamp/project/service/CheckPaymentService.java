@@ -1,6 +1,6 @@
 package com.ucamp.project.service;
 
-import com.ucamp.project.repository.PaymentRepository;
+import com.ucamp.project.repository.PaymentsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -9,10 +9,10 @@ import java.time.LocalDateTime;
 @Service
 @RequiredArgsConstructor
 public class CheckPaymentService {
-    private final PaymentRepository paymentRepository;
+    private final PaymentsRepository paymentsRepository;
 
     public boolean isPayment(Long userId){
-        return paymentRepository.hasActivePayment(userId, LocalDateTime.now());
+        return paymentsRepository.hasActivePayment(userId, LocalDateTime.now());
     }
 
 }

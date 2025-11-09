@@ -1,28 +1,24 @@
 package com.ucamp.project.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import com.ucamp.project.dto.PaymentDTO;
 import com.ucamp.project.model.Payments;
 import com.ucamp.project.model.User;
-import com.ucamp.project.service.PaymentService;
+import com.ucamp.project.service.PaymentsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
-import net.minidev.json.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -38,7 +34,7 @@ public class WidgetController {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    private final PaymentService paymentService;
+    private final PaymentsService paymentsService;
 
     // 로그인한 사용자의 최근 결제 내역 조회
     public ResponseEntity<?> getMyLatestPayment(@AuthenticationPrincipal User user) {
@@ -47,7 +43,7 @@ public class WidgetController {
                     .body(Map.of("message", "로그인이 필요한 요청입니다."));
         }
 
-        Payments payment = paymentService.findLatestByUserId(user.getUserId());
+        Payments payment = paymentsService.findLatestByUserId(user.getUserId());
         if (payment == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("message", "결제 내역이 없습니다."));
@@ -74,7 +70,7 @@ public class WidgetController {
                     .body(Map.of("message", "접근 권한이 없습니다."));
         }
 
-        List<Payments> payments = paymentService.findAllByUserId(userId);
+        List<Payments> payments = paymentsService.findAllByUserId(userId);
         if (payments.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("message", "해당 유저의 결제 내역이 없습니다."));
@@ -143,7 +139,7 @@ public class WidgetController {
 
         if (isSuccess) {
             // ② 결제 데이터 DB 저장
-            paymentService.savePaymentFromToss(tossResponse, user.getUserId());
+            paymentsService.savePaymentFromToss(tossResponse, user.getUserId());
         }
 
         return ResponseEntity.status(code).body(tossResponse);
