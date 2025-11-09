@@ -14,5 +14,7 @@ public class UserDetailResponse {
     private String email;
     private Character passStatus;
     private String jobName;
+    private String paymentStatus;
     private List<PostDetailDto> posts;
+
 }

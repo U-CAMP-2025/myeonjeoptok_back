@@ -217,6 +217,13 @@ public class SimulationController {
         }
         simulationService.ensureOwner(simulationId, user.getUserId());
 
+        boolean payment = checkPaymentService.isPayment(user.getUserId());
+        if (!payment) {
+            return ApiResponse.builder()
+                    .code(403)
+                    .message("구독자만 수정이 가능합니다.")
+                    .build();
+        }
         var finalList = simulationService.finalizeReplaceAndDelete(simulationId, request);
 
         var respQaList = finalList.stream().map(q ->

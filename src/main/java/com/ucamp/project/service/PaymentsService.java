@@ -24,7 +24,7 @@ public class PaymentsService {
                 .orElse(null);
     }
 
-    // 유저의 모든 결제 내역
+    // 특정 유저의 모든 결제 내역
     public List<Payments> findAllByUserId(Long userId) {
         return paymentsRepository.findByUser_UserIdOrderByApprovedAtDesc(userId);
     }

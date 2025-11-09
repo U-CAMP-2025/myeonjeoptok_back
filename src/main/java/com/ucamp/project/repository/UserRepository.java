@@ -181,9 +181,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
                 u.email AS email,
                 u.users_profile_image_url AS usersProfileImageUrl,
                 u.pass_status AS passStatus,
-                j.job_name AS jobName
+                j.job_name AS jobName,
+                p.payment_status AS paymentStatus
             FROM users u
             LEFT JOIN job j ON u.job_id = j.job_id
+            LEFT JOIN payments p ON u.user_id = p.user_id
             WHERE u.user_id = :userId
             """, nativeQuery = true)
     UserDetailDto findUserDetailById(@Param("userId") Long userId);
