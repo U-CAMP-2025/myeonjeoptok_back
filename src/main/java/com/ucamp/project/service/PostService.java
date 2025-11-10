@@ -94,8 +94,20 @@ public class PostService {
         for (Post post : posts) {
             System.out.println("test : " + post);
 
+            boolean isPublic = post.getPostStatus().equals("N");
 
-            resp.add(PostResponseDTO.builder().postId(post.getPostId()).nickname(post.getUser().getNickname()).otherWriter(post.getPostOtherWriter() == null ? null : post.getPostOtherWriter().getNickname()).job(postJobRepository.findByPostId(post.getPostId())).title(post.getPostTitle()).description(post.getPostDescription()).bookCount(post.getCount()).review(reviewRepository.findByPostPostId(post.getPostId()).toArray().length).createAt(post.getPostUpdatedAt() == null ? post.getPostCreatedAt() : post.getPostUpdatedAt()).build());
+            resp.add(PostResponseDTO.builder()
+                    .postId(post.getPostId())
+                    .nickname(post.getUser().getNickname())
+                    .otherWriter(post.getPostOtherWriter() == null ? null : post.getPostOtherWriter().getNickname())
+                    .job(postJobRepository.findByPostId(post.getPostId()))
+                    .title(post.getPostTitle())
+                    .description(post.getPostDescription())
+                    .bookCount(post.getCount())
+                    .review(reviewRepository.findByPostPostId(post.getPostId()).toArray().length)
+                    .createAt(post.getPostUpdatedAt() == null ? post.getPostCreatedAt() : post.getPostUpdatedAt())
+                    .isPublic(!isPublic)
+                    .build());
         }
         return resp;
     }
