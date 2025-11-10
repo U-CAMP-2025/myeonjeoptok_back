@@ -118,16 +118,16 @@ public class PostService {
         List<Post> postCount = postRepository.simulGetPost(user.getUserId());
 
         // 결제 확인
-        Optional<Payments> payments = paymentsRepository.findByUserAndExpiredAtBeforeAndPaymentStatus(user, LocalDateTime.now(), "ACTIVE");
+        boolean payments = paymentsRepository.hasActivePayment(user.getUserId(), LocalDateTime.now());
 
-        int max_size = 9;
+        int max_count = 9;
 
-        if (payments.isPresent()) {
-            max_size = 21;
+        if(payments){
+            max_count = 21;
         }
 
-        if (postCount.size() == max_size) {
-            throw new RuntimeException("질문셋은 최대 " + max_size + "개까지 생성됩니다.");
+        if (postCount.size() == max_count) {
+            throw new RuntimeException("질문셋은 최대 " + max_count + "개까지 생성됩니다.");
         }
 
         //포스트 생성
