@@ -131,11 +131,10 @@ public class PostService {
             postJobRepository.save(pJob);
         }
 
-        long count = 1l;
-
+        long count = 0L;
         List<Qa> Qas = new ArrayList<>();
         for (PostCreateRequestDTO.QaSet qaSet : req.getQaSets()) {
-            if (count++ >= 10) {
+            if (count >= 10) {
                 break;
             }
             Qa qa = Qa.builder().post(postRecive).qaQuestion(qaSet.getQuestion()).qaAnswer(qaSet.getAnswer()).qaOrder(count++).build();
@@ -158,7 +157,7 @@ public class PostService {
 
         //결제 정보
         boolean payments = paymentsRepository.hasActivePayment(user.getUserId(), LocalDateTime.now());
-        if(post.getPostOtherWriter() != null && payments){
+        if(post.getPostOtherWriter() != null && !payments){
             isPayment = false;
         }
 
@@ -193,7 +192,7 @@ public class PostService {
 
         // 결제 확인
         boolean payments = paymentsRepository.hasActivePayment(user.getUserId(), LocalDateTime.now());
-        if(post.getPostOtherWriter() != null && payments){
+        if(post.getPostOtherWriter() != null && !payments){
             throw new RuntimeException("스크랩해온 글을 수정하러면 구독이 필요합니다.");
         }
 
