@@ -9,4 +9,5 @@ import lombok.Getter;
 public class SimulationResultDto {
     private Long simulationId;
     private PostDto post;
+    private boolean payment;
 }

@@ -20,6 +20,7 @@ public class SimulationQueryService {
     private final SimulationService simulationService;
     private final TranscriptionService transcriptionService;
     private final SimulationRepository  simulationRepository;
+    private final CheckPaymentService checkPaymentService;
 
     @Transactional(readOnly = true)
     public SimulationResultDto buildResult(Long simulationId) {
@@ -37,6 +38,12 @@ public class SimulationQueryService {
                         t -> t,
                         (prev, curr) -> curr // 동일 qaId면 더 최근 것으로 덮기
                 ));
+
+        // 결제 확인
+        Long userId = simulationRepository.findById(simulationId)
+                .orElseThrow(() -> new IllegalArgumentException("Simulation not found: " + simulationId))
+                .getUser().getUserId();
+        boolean payment = checkPaymentService.isPayment(userId);
 
         // 3) Qa 리스트를 DTO로 변환하며 transcript + feedback을 같이 주입
         List<QaDto> mapped = detail.getPost().getQaList().stream()
@@ -67,6 +74,7 @@ public class SimulationQueryService {
         return SimulationResultDto.builder()
                 .simulationId(simulationId)
                 .post(post)
+                .payment(payment)
                 .build();
     }
 

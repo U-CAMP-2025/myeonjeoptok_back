@@ -94,9 +94,9 @@ public class PaymentsService {
         // ===== 3️⃣ 신규 / 갱신 분기 =====
         if (latest != null && !latest.getExpiredAt().isBefore(now.minusDays(31))) {
             // ✅ 갱신
-            startedAt = latest.getExpiredAt();          // 새 구독 시작일은 이전 만료일
-            expiredAt = latest.getExpiredAt().plusMonths(1); // 새 만료일은 +1개월
-            approvedAt = now;                           // 결제일은 현재 시간
+            startedAt = latest.getExpiredAt().plusDays(1);  // 새 구독 시작일은 이전 만료일+1
+            expiredAt = startedAt.plusMonths(1);            // 새 만료일은 거기에 +1개월
+            approvedAt = now;                               // 결제일은 현재 시간
             // status = "RENEWED";
             System.out.println("🔁 구독 갱신 처리됨");
         } else {

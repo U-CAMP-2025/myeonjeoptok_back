@@ -158,6 +158,22 @@ public class AuthController {
         return ResponseEntity.status(302).location(URI.create(redirectUrl)).build();
     }
 
+    // 카카오 세션 확인용 엔드포인트
+    @GetMapping("/signup/ready")
+    public ResponseEntity<Map<String, Object>> signupReady(HttpSession session) {
+        String kakaoId = (String) session.getAttribute("P_KAKAO_ID");
+
+        if (kakaoId == null) {
+            return ResponseEntity.status(401).body(Map.of(
+                    "allowed", false,
+                    "message", "카카오 로그인 후 회원가입을 진행할 수 있습니다."
+            ));
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "allowed", true
+        ));
+    }
 
     @PostMapping("/signup")
     public ResponseEntity<Map<String, Object>> signup(@RequestBody Map<String, String> body, HttpSession session) {
