@@ -38,7 +38,7 @@ public class NotiScheduler {
     private final PostService postService;
     private final UserRepository userRepository;
 
-    @Scheduled(cron = "0 0 0 * * *")
+    @Scheduled(cron = "0 * * * * *")
     public void pushDday() {
         LocalDate today = LocalDate.now();
 
@@ -94,7 +94,7 @@ public class NotiScheduler {
         log.info("[NotiScheduler] candidates={}, saved={}, skipped={}", targets.size(), saved, skipped);
     }
 
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 * * * * *")
     @Transactional
     public void deletePostScheduled() {
         // 결제가 없고 게시물이 10개 이상 있는 사용자들의 ID 목록 조회

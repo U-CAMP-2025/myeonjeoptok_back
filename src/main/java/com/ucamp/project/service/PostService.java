@@ -94,8 +94,20 @@ public class PostService {
         for (Post post : posts) {
             System.out.println("test : " + post);
 
+            boolean isPublic = post.getPostStatus().equals("N");
 
-            resp.add(PostResponseDTO.builder().postId(post.getPostId()).nickname(post.getUser().getNickname()).otherWriter(post.getPostOtherWriter() == null ? null : post.getPostOtherWriter().getNickname()).job(postJobRepository.findByPostId(post.getPostId())).title(post.getPostTitle()).description(post.getPostDescription()).bookCount(post.getCount()).review(reviewRepository.findByPostPostId(post.getPostId()).toArray().length).createAt(post.getPostUpdatedAt() == null ? post.getPostCreatedAt() : post.getPostUpdatedAt()).build());
+            resp.add(PostResponseDTO.builder()
+                    .postId(post.getPostId())
+                    .nickname(post.getUser().getNickname())
+                    .otherWriter(post.getPostOtherWriter() == null ? null : post.getPostOtherWriter().getNickname())
+                    .job(postJobRepository.findByPostId(post.getPostId()))
+                    .title(post.getPostTitle())
+                    .description(post.getPostDescription())
+                    .bookCount(post.getCount())
+                    .review(reviewRepository.findByPostPostId(post.getPostId()).toArray().length)
+                    .createAt(post.getPostUpdatedAt() == null ? post.getPostCreatedAt() : post.getPostUpdatedAt())
+                    .isPublic(!isPublic)
+                    .build());
         }
         return resp;
     }
@@ -106,16 +118,16 @@ public class PostService {
         List<Post> postCount = postRepository.simulGetPost(user.getUserId());
 
         // 결제 확인
-        Optional<Payments> payments = paymentsRepository.findByUserAndExpiredAtBeforeAndPaymentStatus(user, LocalDateTime.now(), "ACTIVE");
+        boolean payments = paymentsRepository.hasActivePayment(user.getUserId(), LocalDateTime.now());
 
-        int max_size = 9;
+        int max_count = 9;
 
-        if (payments.isPresent()) {
-            max_size = 21;
+        if(payments){
+            max_count = 21;
         }
 
-        if (postCount.size() == max_size) {
-            throw new RuntimeException("질문셋은 최대 " + max_size + "개까지 생성됩니다.");
+        if (postCount.size() == max_count) {
+            throw new RuntimeException("질문셋은 최대 " + max_count + "개까지 생성됩니다.");
         }
 
         //포스트 생성

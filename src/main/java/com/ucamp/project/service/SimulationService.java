@@ -266,10 +266,9 @@ public class SimulationService {
             long fb  = transcriptionRepository.countFeedbackIncludingSilent(simulationId);
             System.out.println("STT count=" + stt + ", FB count=" + fb + ", expected=" + expected);
 
-            if (stt <= fb) {
-                return true; // STT & 피드백 모두 완료
+            if (stt >= expected && fb >= expected) {
+                return true;
             }
-
             try { Thread.sleep(1000); }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
