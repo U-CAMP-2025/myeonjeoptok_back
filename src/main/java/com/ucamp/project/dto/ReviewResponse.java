@@ -18,6 +18,7 @@ public class ReviewResponse {
     private String content;
     private LocalDateTime createdAt;
     private String profileImage;
+    private Long userId;
 
     public static ReviewResponse fromEntity(Review review) {
         User user = review.getUser();
@@ -28,6 +29,7 @@ public class ReviewResponse {
                 .createdAt(review.getReviewCreatedAt())
                 .nickname(user != null ? user.getNickname() : "유저없어요")
                 .profileImage(user != null ? user.getUsersProfileImageUrl() : null)
+                .userId(user != null ? user.getUserId() : null)
                 .build();
     }
 }
