@@ -3,6 +3,7 @@ package com.ucamp.project.controller;
 import com.ucamp.project.dto.*;
 import com.ucamp.project.model.User;
 import com.ucamp.project.service.CertService;
+import com.ucamp.project.service.CheckPaymentService;
 import com.ucamp.project.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +27,7 @@ import java.util.Map;
 public class UserController {
     private final UserService userService;
     private final CertService certService;
+    private final CheckPaymentService checkPaymentService;
 
     private Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -104,5 +106,12 @@ public class UserController {
     public ResponseEntity<UserDetailResponse> userDetail(@PathVariable Long userId) {
         UserDetailResponse userDetail = userService.userDetail(userId);
         return ResponseEntity.ok(userDetail);
+    }
+
+    @GetMapping("/payment")
+    public ResponseEntity<Map<String, Object>> getUserPayment() {
+        Long uid = getCurrentUserId();
+        boolean isPaymentUser = checkPaymentService.isPayment(uid);
+        return ResponseEntity.ok(Map.of("isPlus", isPaymentUser));
     }
 }
