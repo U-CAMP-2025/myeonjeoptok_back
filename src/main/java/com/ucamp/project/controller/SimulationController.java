@@ -49,11 +49,23 @@ public class SimulationController {
                     .build();
         }
 
+        Map<String,Object> data = new HashMap<>();
+
+        data.put("post", postService.simulGetPost(user));
+
+        // 결제 유저 판단
+        boolean subscribed = checkPaymentService.isPayment(user.getUserId());
+        if (!subscribed) {
+            data.put("count", simulationService.countUserDailySuccessByUsage(user.getUserId(), LocalDate.now()));
+        }
+
         ApiResponse<Object> resp = ApiResponse.builder()
                 .code(200)
                 .message("success")
-                .data(postService.simulGetPost(user))
+                .data(data)
                 .build();
+
+
         return resp;
     }
 
