@@ -364,6 +364,7 @@ public class AuthController {
 
         // 우리 서비스 계정 비활성화
         u.setStatus("DISABLED");
+        u.setCreatedAt(LocalDateTime.now());
         u.setRefreshToken(null);
 
         String suffix = "_" + uid;
