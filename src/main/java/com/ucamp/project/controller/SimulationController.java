@@ -109,8 +109,13 @@ public class SimulationController {
     }
 
     @GetMapping("/{id}/start")
-    public ApiResponse<Object> getSimulation(@PathVariable Long id) {
+    public ApiResponse<Object> getSimulation(@PathVariable Long id,
+                                             @AuthenticationPrincipal User user) {
         SimulationDetailResponse data = simulationService.findStart(id);
+
+        simulationService.ensureOwner(id, user.getUserId());
+
+
         ApiResponse<Object> resp = ApiResponse.builder()
                 .code(200)
                 .message("success")
@@ -193,6 +198,7 @@ public class SimulationController {
         if (user == null) {
             return ApiResponse.builder().code(401).message("로그인이 필요합니다.").build();
         }
+        simulationService.ensureOwner(simulationId, user.getUserId());
 
         // 본인 소유 검증
         var dto = simulationQueryService.buildResult(simulationId); // PostDto + QaDto(transContent 포함)
